@@ -1,16 +1,18 @@
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { cn } from "@/lib/utils";
-import { User, Stethoscope } from "lucide-react";
+import { User } from "lucide-react";
 import { motion } from "framer-motion";
+import drNishaAvatar from "@assets/WhatsApp_Image_2026-03-29_at_8.15.33_PM_1774795561459.jpeg";
 
 interface MessageBubbleProps {
   role: "user" | "model" | "assistant";
   content: string;
   isStreaming?: boolean;
+  userName?: string | null;
 }
 
-export function MessageBubble({ role, content, isStreaming }: MessageBubbleProps) {
+export function MessageBubble({ role, content, isStreaming, userName }: MessageBubbleProps) {
   const isAI = role === "model" || role === "assistant";
 
   return (
@@ -19,37 +21,32 @@ export function MessageBubble({ role, content, isStreaming }: MessageBubbleProps
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
       className={cn(
-        "flex w-full px-4 md:px-0 py-6",
+        "flex w-full px-4 md:px-0 py-4",
         isAI ? "justify-start" : "justify-end"
       )}
     >
       <div className={cn(
-        "flex gap-4 max-w-3xl w-full",
+        "flex gap-3 max-w-3xl w-full",
         isAI ? "flex-row" : "flex-row-reverse"
       )}>
         
         {/* Avatar */}
         <div className="shrink-0 flex flex-col items-center">
           <div className={cn(
-            "w-10 h-10 rounded-2xl flex items-center justify-center shadow-sm",
+            "w-10 h-10 rounded-full flex items-center justify-center shadow-sm overflow-hidden",
             isAI 
-              ? "bg-gradient-to-br from-primary/20 to-primary/5 text-primary border border-primary/10" 
+              ? "border-2 border-primary/20" 
               : "bg-gradient-to-br from-foreground to-foreground/80 text-background"
           )}>
             {isAI ? (
               <img 
-                src={`${import.meta.env.BASE_URL}images/dr-nisha-avatar.png`} 
+                src={drNishaAvatar}
                 alt="Dr. Nisha" 
-                className="w-full h-full object-cover rounded-2xl"
-                onError={(e) => {
-                  (e.target as HTMLImageElement).style.display = 'none';
-                  (e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden');
-                }}
+                className="w-full h-full object-cover"
               />
             ) : (
               <User size={20} />
             )}
-            {isAI && <Stethoscope size={20} className="hidden" />}
           </div>
         </div>
 
@@ -59,7 +56,7 @@ export function MessageBubble({ role, content, isStreaming }: MessageBubbleProps
           isAI ? "items-start" : "items-end"
         )}>
           <span className="text-xs font-medium text-muted-foreground mb-1.5 px-1">
-            {isAI ? "Dr. Nisha" : "You"}
+            {isAI ? "Dr. Nisha" : (userName || "You")}
           </span>
           
           <div className={cn(
@@ -74,7 +71,7 @@ export function MessageBubble({ role, content, isStreaming }: MessageBubbleProps
                   {content}
                 </ReactMarkdown>
                 {isStreaming && (
-                  <span className="inline-block w-2 h-4 ml-1 bg-primary animate-pulse" />
+                  <span className="inline-block w-2 h-4 ml-1 bg-primary animate-pulse rounded" />
                 )}
               </div>
             ) : (
