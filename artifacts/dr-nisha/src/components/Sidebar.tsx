@@ -121,7 +121,7 @@ export function Sidebar({ isOpen, setIsOpen, activeId, onSelect, userName, onLog
         <div className="p-4">
           <button
             onClick={handleNewChat}
-            className="w-full flex items-center gap-2 px-4 py-3 rounded-xl bg-white border border-border shadow-sm text-foreground hover:border-primary/30 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 font-medium"
+            className="w-full flex items-center gap-2 px-4 py-3 rounded-xl bg-background dark:bg-muted border border-border shadow-sm text-foreground hover:border-primary/30 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 font-medium"
           >
             <Plus size={18} className="text-primary" />
             New Consultation
