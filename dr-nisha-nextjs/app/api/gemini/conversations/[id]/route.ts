@@ -3,10 +3,11 @@ import pool from "@/lib/db";
 
 export async function GET(
   _request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const id = parseInt(params.id);
+    const { id: idStr } = await params;
+    const id = parseInt(idStr);
     const [convRows] = await pool.execute(
       "SELECT * FROM conversations WHERE id = ?",
       [id]
@@ -30,10 +31,11 @@ export async function GET(
 
 export async function DELETE(
   _request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const id = parseInt(params.id);
+    const { id: idStr } = await params;
+    const id = parseInt(idStr);
     await pool.execute("DELETE FROM messages WHERE conversation_id = ?", [id]);
     await pool.execute("DELETE FROM conversations WHERE id = ?", [id]);
     return new NextResponse(null, { status: 204 });

@@ -15,9 +15,10 @@ STRICT RULES:
 
 export async function GET(
   _request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  const id = parseInt(params.id);
+  const { id: idStr } = await params;
+  const id = parseInt(idStr);
   const [rows] = await pool.execute(
     "SELECT * FROM messages WHERE conversation_id = ? ORDER BY created_at ASC",
     [id]
@@ -27,9 +28,10 @@ export async function GET(
 
 export async function POST(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  const id = parseInt(params.id);
+  const { id: idStr } = await params;
+  const id = parseInt(idStr);
   const { content } = await request.json();
 
   const [convRows] = await pool.execute(
