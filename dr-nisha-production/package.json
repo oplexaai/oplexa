@@ -1,0 +1,14 @@
+{
+  "name": "dr-nisha-server",
+  "version": "1.0.0",
+  "description": "Dr. Nisha – Medical AI Chatbot",
+  "type": "module",
+  "scripts": {
+    "start": "node server.mjs"
+  },
+  "dependencies": {
+    "@google/genai": "^1.0.1",
+    "pg": "^8.14.1",
+    "drizzle-orm": "^0.44.2"
+  }
+}

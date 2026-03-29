@@ -2,9 +2,21 @@ import { Router, type IRouter } from "express";
 import { eq } from "drizzle-orm";
 import { db, conversations, messages } from "@workspace/db";
 import { CreateGeminiConversationBody, SendGeminiMessageBody } from "@workspace/api-zod";
-import { ai } from "@workspace/integrations-gemini-ai";
+import { GoogleGenAI } from "@google/genai";
 
 const router: IRouter = Router();
+
+function getAiClient() {
+  const apiKey = process.env.GEMINI_API_KEY || process.env.AI_INTEGRATIONS_GEMINI_API_KEY;
+  if (!apiKey) {
+    throw new Error("GEMINI_API_KEY environment variable is required.");
+  }
+  const baseUrl = process.env.AI_INTEGRATIONS_GEMINI_BASE_URL;
+  return new GoogleGenAI({
+    apiKey,
+    ...(baseUrl ? { httpOptions: { apiVersion: "", baseUrl } } : {}),
+  });
+}
 
 const SYSTEM_INSTRUCTION = `You are Dr. Nisha, an empathetic and professional medical assistant with years of clinical experience. 
 
@@ -117,6 +129,7 @@ router.post("/conversations/:id/messages", async (req, res) => {
   let fullResponse = "";
 
   try {
+    const ai = getAiClient();
     const stream = await ai.models.generateContentStream({
       model: "gemini-2.5-flash",
       config: {
@@ -143,7 +156,7 @@ router.post("/conversations/:id/messages", async (req, res) => {
       content: fullResponse,
     });
 
-    if (conversation.title === "New Chat" && allMessages.length === 1) {
+    if (conversation.title === "New Consultation" && allMessages.length === 1) {
       const titleSnippet = body.content.substring(0, 50);
       await db
         .update(conversations)
@@ -154,7 +167,7 @@ router.post("/conversations/:id/messages", async (req, res) => {
     res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
   } catch (err) {
     req.log.error({ err }, "Gemini stream error");
-    res.write(`data: ${JSON.stringify({ error: "AI response failed" })}\n\n`);
+    res.write(`data: ${JSON.stringify({ error: "AI response failed. Check GEMINI_API_KEY." })}\n\n`);
   }
 
   res.end();

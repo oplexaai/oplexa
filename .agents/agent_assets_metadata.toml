@@ -1,0 +1,8 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "NMZDrhIp71zJdhN0Yiv-f"
+uri = "file://dr-nisha-production.tar.gz"
+type = "unspecified"
+title = "Dr. Nisha — Production Ready Package"
