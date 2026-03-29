@@ -26,7 +26,7 @@ export function MessageBubble({ role, content, isStreaming, userName }: MessageB
       )}
     >
       <div className={cn(
-        "flex gap-3 max-w-3xl w-full",
+        "flex gap-3 max-w-3xl w-full items-start",
         isAI ? "flex-row" : "flex-row-reverse"
       )}>
         

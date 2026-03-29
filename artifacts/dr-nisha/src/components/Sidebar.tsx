@@ -108,7 +108,7 @@ export function Sidebar({ isOpen, setIsOpen, activeId, onSelect, userName, onLog
               </button>
               <button
                 onClick={() => setShowLoginModal(true)}
-                className="w-full flex items-center gap-2 px-3 py-2.5 rounded-xl border border-border bg-white text-sm font-medium text-foreground hover:border-primary/30 hover:bg-primary/5 transition-colors"
+                className="w-full flex items-center gap-2 px-3 py-2.5 rounded-xl border border-border bg-background dark:bg-muted text-sm font-medium text-foreground hover:border-primary/30 hover:bg-primary/5 transition-colors"
               >
                 <UserCircle2 size={15} className="text-primary" />
                 Create Account

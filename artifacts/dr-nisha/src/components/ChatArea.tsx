@@ -18,14 +18,43 @@ export function ChatArea({ activeId, onCreateNew, isCreating, userName }: ChatAr
   const { sendMessage, isStreaming, streamedResponse, optimisticUserMessage } = useStreamingChat(activeId);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const lastMessageCountRef = useRef(0);
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  const isNearBottom = () => {
+    if (!scrollContainerRef.current) return true;
+    const { scrollTop, scrollHeight, clientHeight } = scrollContainerRef.current;
+    return scrollHeight - scrollTop - clientHeight < 150;
   };
 
+  const scrollToBottom = (force = false) => {
+    if (force || isNearBottom()) {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
+  };
+
+  // Force scroll when user sends a new message
   useEffect(() => {
-    scrollToBottom();
-  }, [conversationData?.messages, streamedResponse, optimisticUserMessage]);
+    if (optimisticUserMessage) {
+      scrollToBottom(true);
+    }
+  }, [optimisticUserMessage]);
+
+  // Smart scroll during streaming — only if user is already near bottom
+  useEffect(() => {
+    if (streamedResponse) {
+      scrollToBottom(false);
+    }
+  }, [streamedResponse]);
+
+  // Scroll when conversation history loads (switch between chats)
+  useEffect(() => {
+    const msgs = conversationData?.messages || [];
+    if (msgs.length !== lastMessageCountRef.current) {
+      lastMessageCountRef.current = msgs.length;
+      if (!isStreaming) scrollToBottom(true);
+    }
+  }, [conversationData?.messages]);
 
   if (!activeId) {
     return (
@@ -41,7 +70,10 @@ export function ChatArea({ activeId, onCreateNew, isCreating, userName }: ChatAr
     <div className="flex-1 flex flex-col h-[100dvh] relative bg-background">
       
       {/* Scrollable Messages Area */}
-      <div className="flex-1 overflow-y-auto w-full relative pt-20 pb-4">
+      <div
+        ref={scrollContainerRef}
+        className="flex-1 overflow-y-auto w-full relative pt-20 pb-4"
+      >
         <div className="max-w-4xl mx-auto flex flex-col">
           {isLoading ? (
             <div className="flex flex-col items-center justify-center h-full text-muted-foreground mt-32">
@@ -78,11 +110,11 @@ export function ChatArea({ activeId, onCreateNew, isCreating, userName }: ChatAr
               )}
 
               {isStreaming && !streamedResponse && (
-                <div className="flex items-end gap-3 px-4 py-2">
+                <div className="flex items-start gap-3 px-4 py-2">
                   <div className="w-8 h-8 rounded-full overflow-hidden border-2 border-primary/20 shadow-sm flex-shrink-0">
                     <img src={drNishaAvatar} alt="Dr. Nisha" className="w-full h-full object-cover" />
                   </div>
-                  <div className="bg-muted rounded-2xl rounded-bl-sm px-4 py-3 shadow-sm">
+                  <div className="bg-muted rounded-2xl rounded-tl-sm px-4 py-3 shadow-sm">
                     <p className="text-xs font-medium text-primary mb-1.5">Dr. Nisha is typing...</p>
                     <div className="flex gap-1 items-center">
                       <span className="w-2 h-2 bg-muted-foreground/50 rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
