@@ -6,3 +6,9 @@ id = "NMZDrhIp71zJdhN0Yiv-f"
 uri = "file://dr-nisha-production.tar.gz"
 type = "unspecified"
 title = "Dr. Nisha — Production Ready Package"
+
+[[outputs]]
+id = "Ee-UBlK-VOT4OjDcD64Vh"
+uri = "file://dr-nisha-nextjs.tar.gz"
+type = "unspecified"
+title = "Dr. Nisha — Next.js Project (Hostinger Ready)"
