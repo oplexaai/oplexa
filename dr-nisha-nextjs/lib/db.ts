@@ -1,9 +1,17 @@
 import mysql from "mysql2/promise";
 
 let pool: mysql.Pool | null = null;
-let dbInitialized = false;
 
-function getPool(): mysql.Pool {
+export function isMySQLConfigured(): boolean {
+  return !!(
+    process.env.MYSQL_HOST &&
+    process.env.MYSQL_USER &&
+    process.env.MYSQL_PASSWORD &&
+    process.env.MYSQL_DATABASE
+  );
+}
+
+export function getPool(): mysql.Pool {
   if (!pool) {
     const host = process.env.MYSQL_HOST || "127.0.0.1";
     pool = mysql.createPool({
@@ -13,13 +21,16 @@ function getPool(): mysql.Pool {
       password: process.env.MYSQL_PASSWORD,
       database: process.env.MYSQL_DATABASE,
       waitForConnections: true,
-      connectionLimit: 10,
+      connectionLimit: 5,
       queueLimit: 0,
-      connectTimeout: 10000,
-    });
+      connectTimeout: 8000,
+      family: 4,
+    } as any);
   }
   return pool;
 }
+
+let dbInitialized = false;
 
 export async function initDb() {
   if (dbInitialized) return;

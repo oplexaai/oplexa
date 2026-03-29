@@ -1,50 +1,61 @@
 import { NextResponse } from "next/server";
-import getPool, { initDb } from "@/lib/db";
+import { isMySQLConfigured, getPool, initDb } from "@/lib/db";
+import { fsGetConversation, fsDeleteConversation } from "@/lib/fileStorage";
 
 export async function GET(
-  _request: Request,
+  _req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
+  const convId = parseInt(id);
+
+  if (!isMySQLConfigured()) {
+    const conv = fsGetConversation(convId);
+    if (!conv) return NextResponse.json({ error: "Not found" }, { status: 404 });
+    return NextResponse.json(conv);
+  }
   try {
     await initDb();
     const pool = getPool();
-    const { id: idStr } = await params;
-    const id = parseInt(idStr);
-    const [convRows] = await pool.execute(
+    const [convRows] = (await pool.execute(
       "SELECT * FROM conversations WHERE id = ?",
-      [id]
-    ) as any[];
+      [convId]
+    )) as any[];
     if (!(convRows as any[]).length) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
-    const [msgRows] = await pool.execute(
+    const [msgRows] = (await pool.execute(
       "SELECT * FROM messages WHERE conversation_id = ? ORDER BY created_at ASC",
-      [id]
-    );
-    return NextResponse.json({
-      ...(convRows as any[])[0],
-      messages: msgRows,
-    });
+      [convId]
+    )) as any[];
+    return NextResponse.json({ ...(convRows as any[])[0], messages: msgRows });
   } catch (err: any) {
-    console.error("GET /conversations/:id error:", err);
-    return NextResponse.json({ error: "Database error", detail: err?.message }, { status: 500 });
+    console.error("MySQL failed, using file storage:", err?.message);
+    const conv = fsGetConversation(convId);
+    if (!conv) return NextResponse.json({ error: "Not found" }, { status: 404 });
+    return NextResponse.json(conv);
   }
 }
 
 export async function DELETE(
-  _request: Request,
+  _req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
+  const convId = parseInt(id);
+
+  if (!isMySQLConfigured()) {
+    fsDeleteConversation(convId);
+    return NextResponse.json({ ok: true });
+  }
   try {
     await initDb();
     const pool = getPool();
-    const { id: idStr } = await params;
-    const id = parseInt(idStr);
-    await pool.execute("DELETE FROM messages WHERE conversation_id = ?", [id]);
-    await pool.execute("DELETE FROM conversations WHERE id = ?", [id]);
-    return new NextResponse(null, { status: 204 });
+    await pool.execute("DELETE FROM conversations WHERE id = ?", [convId]);
+    return NextResponse.json({ ok: true });
   } catch (err: any) {
-    console.error("DELETE /conversations/:id error:", err);
-    return NextResponse.json({ error: "Database error", detail: err?.message }, { status: 500 });
+    console.error("MySQL failed, using file storage:", err?.message);
+    fsDeleteConversation(convId);
+    return NextResponse.json({ ok: true });
   }
 }
