@@ -1,0 +1,58 @@
+MAR 29,21:44:43.414
+▲ Next.js 15.2.4
+MAR 29,21:44:43.415
+- Local: http://0.0.0.0:3000
+MAR 29,21:44:43.415
+- Network: http://0.0.0.0:3000
+MAR 29,21:44:43.415
+MAR 29,21:44:43.415
+✓ Starting...
+MAR 29,21:44:43.418
+▲ Next.js 15.2.4
+MAR 29,21:44:43.418
+- Local: http://0.0.0.0:3000
+MAR 29,21:44:43.418
+- Network: http://0.0.0.0:3000
+MAR 29,21:44:43.418
+MAR 29,21:44:43.419
+✓ Starting...
+MAR 29,21:44:43.527
+✓ Ready in 121ms
+MAR 29,21:44:43.661
+✓ Ready in 256ms
+MAR 29,21:47:07.460
+GET /conversations error: Error: Access denied for user 'u373669836_Dr_Nisha'@'::1' (using password: YES)
+at n.execute (/home/u373669836/domains/nisha.niskutech.com/nodejs/.next/server/chunks/203.js:1:90927)
+at a (/home/u373669836/domains/nisha.niskutech.com/nodejs/.next/server/app/api/gemini/conversations/[id]/messages/route.js:1:35171)
+at c (/home/u373669836/domains/nisha.niskutech.com/nodejs/.next/server/app/api/gemini/conversations/route.js:17:462)
+at AsyncLocalStorage.run (node:internal/async_local_storage/async_hooks:80:14)
+at to.do (/home/u373669836/domains/nisha.niskutech.com/nodejs/node_modules/next/dist/compiled/next-server/app-route.runtime.prod.js:18:18634)
+at /home/u373669836/domains/nisha.niskutech.com/nodejs/node_modules/next/dist/compiled/next-server/app-route.runtime.prod.js:18:25302
+at /home/u373669836/domains/nisha.niskutech.com/nodejs/node_modules/next/dist/server/lib/trace/tracer.js:169:36
+at NoopContextManager.with (/home/u373669836/domains/nisha.niskutech.com/nodejs/node_modules/next/dist/compiled/@opentelemetry/api/index.js:1:7062)
+at ContextAPI.with (/home/u373669836/domains/nisha.niskutech.com/nodejs/node_modules/next/dist/compiled/@opentelemetry/api/index.js:1:518)
+at NoopTracer.startActiveSpan (/home/u373669836/domains/nisha.niskutech.com/nodejs/node_modules/next/dist/compiled/@opentelemetry/api/index.js:1:18093)
+MAR 29,21:47:09.475
+POST /conversations error: Error: Access denied for user 'u373669836_Dr_Nisha'@'::1' (using password: YES)
+at n.execute (/home/u373669836/domains/nisha.niskutech.com/nodejs/.next/server/chunks/203.js:1:90927)
+at a (/home/u373669836/domains/nisha.niskutech.com/nodejs/.next/server/app/api/gemini/conversations/[id]/messages/route.js:1:35171)
+at p (/home/u373669836/domains/nisha.niskutech.com/nodejs/.next/server/app/api/gemini/conversations/route.js:17:811)
+at AsyncLocalStorage.run (node:internal/async_local_storage/async_hooks:80:14)
+at to.do (/home/u373669836/domains/nisha.niskutech.com/nodejs/node_modules/next/dist/compiled/next-server/app-route.runtime.prod.js:18:18634)
+at /home/u373669836/domains/nisha.niskutech.com/nodejs/node_modules/next/dist/compiled/next-server/app-route.runtime.prod.js:18:25302
+at /home/u373669836/domains/nisha.niskutech.com/nodejs/node_modules/next/dist/server/lib/trace/tracer.js:169:36
+at NoopContextManager.with (/home/u373669836/domains/nisha.niskutech.com/nodejs/node_modules/next/dist/compiled/@opentelemetry/api/index.js:1:7062)
+at ContextAPI.with (/home/u373669836/domains/nisha.niskutech.com/nodejs/node_modules/next/dist/compiled/@opentelemetry/api/index.js:1:518)
+at NoopTracer.startActiveSpan (/home/u373669836/domains/nisha.niskutech.com/nodejs/node_modules/next/dist/compiled/@opentelemetry/api/index.js:1:18093)
+MAR 29,21:47:12.057
+POST /conversations error: Error: Access denied for user 'u373669836_Dr_Nisha'@'::1' (using password: YES)
+at n.execute (/home/u373669836/domains/nisha.niskutech.com/nodejs/.next/server/chunks/203.js:1:90927)
+at a (/home/u373669836/domains/nisha.niskutech.com/nodejs/.next/server/app/api/gemini/conversations/[id]/messages/route.js:1:35171)
+at p (/home/u373669836/domains/nisha.niskutech.com/nodejs/.next/server/app/api/gemini/conversations/route.js:17:811)
+at AsyncLocalStorage.run (node:internal/async_local_storage/async_hooks:80:14)
+at to.do (/home/u373669836/domains/nisha.niskutech.com/nodejs/node_modules/next/dist/compiled/next-server/app-route.runtime.prod.js:18:18634)
+at /home/u373669836/domains/nisha.niskutech.com/nodejs/node_modules/next/dist/compiled/next-server/app-route.runtime.prod.js:18:25302
+at /home/u373669836/domains/nisha.niskutech.com/nodejs/node_modules/next/dist/server/lib/trace/tracer.js:169:36
+at NoopContextManager.with (/home/u373669836/domains/nisha.niskutech.com/nodejs/node_modules/next/dist/compiled/@opentelemetry/api/index.js:1:7062)
+at ContextAPI.with (/home/u373669836/domains/nisha.niskutech.com/nodejs/node_modules/next/dist/compiled/@opentelemetry/api/index.js:1:518)
+at NoopTracer.startActiveSpan (/home/u373669836/domains/nisha.niskutech.com/nodejs/node_modules/next/dist/compiled/@opentelemetry/api/index.js:1:18093)
