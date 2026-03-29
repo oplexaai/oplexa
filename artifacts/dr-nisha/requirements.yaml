@@ -1,0 +1,19 @@
+packages:
+  "framer-motion": "For smooth layout transitions and message bubble animations"
+  "react-markdown": "To render Markdown formatted responses from the AI"
+  "remark-gfm": "For GitHub flavored markdown support (tables, lists) in AI responses"
+  "clsx": "For conditional class name merging"
+  "tailwind-merge": "For merging Tailwind classes safely"
+  "date-fns": "For formatting conversation dates and message timestamps"
+
+images:
+  - path: "artifacts/dr-nisha/public/images/dr-nisha-avatar.png"
+    description: "A professional, warm, and approachable female doctor with a stethoscope around her neck. She has a soft, empathetic smile. Clean, light background with soft blue and white tones, modern flat illustration style, vector art, high quality."
+    aspect_ratio: "1:1"
+  - path: "artifacts/dr-nisha/public/images/empty-state.png"
+    description: "A minimalist, abstract medical cross or health icon composed of soft flowing gradients in calm blue, teal, and soft gray. Clean white background."
+    aspect_ratio: "1:1"
+
+notes:
+  - Assumes React Query hooks from @workspace/api-client-react are available.
+  - Streaming endpoint returns SSE with 'data: {"content": "..."}' and 'data: {"done": true}'.
