@@ -1,0 +1,41 @@
+npm warn deprecated node-domexception@1.0.0: Use your platform's native DOMException instead
+npm warn deprecated next@15.2.4: This version has a security vulnerability. Please upgrade to a patched version. See https://nextjs.org/blog/CVE-2025-66478 for more details.
+
+added 243 packages, and audited 244 packages in 25s
+
+101 packages are looking for funding
+  run `npm fund` for details
+
+1 critical severity vulnerability
+
+To address all issues, run:
+  npm audit fix --force
+
+Run `npm audit` for details.
+
+> dr-nisha@1.0.0 build
+> next build
+
+   ▲ Next.js 15.2.4
+
+   Creating an optimized production build ...
+ ✓ Compiled successfully
+   Linting and checking validity of types ...
+Failed to compile.
+
+./lib/db.ts:9:18
+Type error: No overload matches this call.
+  Overload 1 of 2, '(connectionUri: string): Pool', gave the following error.
+    Argument of type '{ host: string; port: number; user: string | undefined; password: string | undefined; database: string | undefined; waitForConnections: boolean; connectionLimit: number; queueLimit: number; connectTimeout: number; family: number; }' is not assignable to parameter of type 'string'.
+  Overload 2 of 2, '(config: PoolOptions): Pool', gave the following error.
+    Object literal may only specify known properties, and 'family' does not exist in type 'PoolOptions'.
+
+[0m [90m  7 |[39m   [36mif[39m ([33m![39mpool) {[0m
+[0m [90m  8 |[39m     [36mconst[39m host [33m=[39m process[33m.[39menv[33m.[39m[33mMYSQL_HOST[39m [33m||[39m [32m"127.0.0.1"[39m[33m;[39m[0m
+[0m[31m[1m>[22m[39m[90m  9 |[39m     pool [33m=[39m mysql[33m.[39mcreatePool({[0m
+[0m [90m    |[39m                  [31m[1m^[22m[39m[0m
+[0m [90m 10 |[39m       host[33m:[39m host [33m===[39m [32m"localhost"[39m [33m?[39m [32m"127.0.0.1"[39m [33m:[39m host[33m,[39m[0m
+[0m [90m 11 |[39m       port[33m:[39m parseInt(process[33m.[39menv[33m.[39m[33mMYSQL_PORT[39m [33m||[39m [32m"3306"[39m)[33m,[39m[0m
+[0m [90m 12 |[39m       user[33m:[39m process[33m.[39menv[33m.[39m[33mMYSQL_USER[39m[33m,[39m[0m
+Next.js build worker exited with code: 1 and signal: null
+[31mERROR: Failed to build the application[0m
