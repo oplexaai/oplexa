@@ -9,7 +9,6 @@ interface Message {
   id: number;
   role: "user" | "assistant";
   content: string;
-  created_at?: string;
 }
 
 interface Props {
@@ -17,9 +16,10 @@ interface Props {
   onCreateNew: () => Promise<number | null>;
   isCreating: boolean;
   userName: string | null;
+  onError: (msg: string) => void;
 }
 
-export function ChatArea({ activeId, onCreateNew, isCreating, userName }: Props) {
+export function ChatArea({ activeId, onCreateNew, isCreating, userName, onError }: Props) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [streaming, setStreaming] = useState(false);
@@ -54,13 +54,14 @@ export function ChatArea({ activeId, onCreateNew, isCreating, userName }: Props)
     if (!text || streaming) return;
 
     let convId = activeId;
-
     if (!convId) {
       convId = await onCreateNew();
       if (!convId) return;
     }
 
     setInput("");
+    if (textareaRef.current) textareaRef.current.style.height = "auto";
+
     setMessages((prev) => [
       ...prev,
       { id: Date.now(), role: "user", content: text },
@@ -68,19 +69,19 @@ export function ChatArea({ activeId, onCreateNew, isCreating, userName }: Props)
     setStreaming(true);
     setStreamingText("");
 
-    if (textareaRef.current) {
-      textareaRef.current.style.height = "auto";
-    }
-
     try {
-      const res = await fetch(
-        `/api/gemini/conversations/${convId}/messages`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ content: text }),
-        }
-      );
+      const res = await fetch(`/api/gemini/conversations/${convId}/messages`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content: text }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        onError(err?.error || "Failed to send message.");
+        setStreaming(false);
+        return;
+      }
 
       const reader = res.body!.getReader();
       const decoder = new TextDecoder();
@@ -111,6 +112,7 @@ export function ChatArea({ activeId, onCreateNew, isCreating, userName }: Props)
               setStreaming(false);
             }
             if (parsed.error) {
+              onError(parsed.error);
               setMessages((prev) => [
                 ...prev,
                 { id: Date.now() + 1, role: "assistant", content: `❌ ${parsed.error}` },
@@ -121,7 +123,8 @@ export function ChatArea({ activeId, onCreateNew, isCreating, userName }: Props)
           } catch {}
         }
       }
-    } catch (err) {
+    } catch (err: any) {
+      onError("Connection error. Please check your internet and try again.");
       setStreaming(false);
       setStreamingText("");
     }
@@ -142,10 +145,13 @@ export function ChatArea({ activeId, onCreateNew, isCreating, userName }: Props)
 
   return (
     <div className="flex flex-col flex-1 min-w-0 h-full">
-      {/* Messages area */}
+      {/* Messages */}
       <div className="flex-1 overflow-y-auto pt-20 pb-4">
         {!activeId && messages.length === 0 ? (
-          <EmptyState onStartNew={async () => { await onCreateNew(); }} isCreating={isCreating} />
+          <EmptyState
+            onStartNew={async () => { await onCreateNew(); }}
+            isCreating={isCreating}
+          />
         ) : (
           <div className="max-w-3xl mx-auto py-4 space-y-1">
             {messages.map((msg) => (
@@ -178,7 +184,7 @@ export function ChatArea({ activeId, onCreateNew, isCreating, userName }: Props)
         )}
       </div>
 
-      {/* Input area */}
+      {/* Input */}
       <div className="border-t border-border bg-background/80 backdrop-blur-md px-4 py-3">
         <div className="max-w-3xl mx-auto">
           <div className="flex items-end gap-3 bg-muted rounded-2xl px-4 py-3 border border-border focus-within:border-blue-500/50 focus-within:ring-1 focus-within:ring-blue-500/20 transition-all">
@@ -187,7 +193,7 @@ export function ChatArea({ activeId, onCreateNew, isCreating, userName }: Props)
               value={input}
               onChange={handleTextareaChange}
               onKeyDown={handleKeyDown}
-              placeholder="Ask Dr. Nisha a health question... (English, Hindi, Hinglish)"
+              placeholder="Ask Dr. Nisha a health question... (English / Hindi / Hinglish)"
               rows={1}
               className="flex-1 bg-transparent resize-none text-foreground placeholder:text-muted-foreground text-sm focus:outline-none leading-relaxed"
               style={{ maxHeight: "120px" }}
@@ -198,11 +204,7 @@ export function ChatArea({ activeId, onCreateNew, isCreating, userName }: Props)
               disabled={!input.trim() || streaming}
               className="flex-shrink-0 w-9 h-9 rounded-xl bg-blue-500 hover:bg-blue-600 disabled:opacity-40 disabled:cursor-not-allowed text-white flex items-center justify-center transition-all"
             >
-              {streaming ? (
-                <Loader2 size={16} className="animate-spin" />
-              ) : (
-                <Send size={16} />
-              )}
+              {streaming ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
             </button>
           </div>
           <p className="text-center text-xs text-muted-foreground mt-2">

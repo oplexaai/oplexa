@@ -1,11 +1,13 @@
 import { NextResponse } from "next/server";
-import pool from "@/lib/db";
+import getPool, { initDb } from "@/lib/db";
 
 export async function GET(
   _request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    await initDb();
+    const pool = getPool();
     const { id: idStr } = await params;
     const id = parseInt(idStr);
     const [convRows] = await pool.execute(
@@ -23,9 +25,9 @@ export async function GET(
       ...(convRows as any[])[0],
       messages: msgRows,
     });
-  } catch (err) {
-    console.error(err);
-    return NextResponse.json({ error: "Database error" }, { status: 500 });
+  } catch (err: any) {
+    console.error("GET /conversations/:id error:", err);
+    return NextResponse.json({ error: "Database error", detail: err?.message }, { status: 500 });
   }
 }
 
@@ -34,13 +36,15 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    await initDb();
+    const pool = getPool();
     const { id: idStr } = await params;
     const id = parseInt(idStr);
     await pool.execute("DELETE FROM messages WHERE conversation_id = ?", [id]);
     await pool.execute("DELETE FROM conversations WHERE id = ?", [id]);
     return new NextResponse(null, { status: 204 });
-  } catch (err) {
-    console.error(err);
-    return NextResponse.json({ error: "Database error" }, { status: 500 });
+  } catch (err: any) {
+    console.error("DELETE /conversations/:id error:", err);
+    return NextResponse.json({ error: "Database error", detail: err?.message }, { status: 500 });
   }
 }
