@@ -1,6 +1,23 @@
 import { isMySQLConfigured, getPool, initDb } from "@/lib/db";
 import { fsGetMessages, fsAddMessage, fsGetConversation } from "@/lib/fileStorage";
 import { GoogleGenAI } from "@google/genai";
+import { NextRequest } from "next/server";
+
+const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
+const RATE_LIMIT = 8;
+const RATE_WINDOW_MS = 60 * 1000;
+
+function checkRateLimit(ip: string): boolean {
+  const now = Date.now();
+  const entry = rateLimitMap.get(ip);
+  if (!entry || now > entry.resetAt) {
+    rateLimitMap.set(ip, { count: 1, resetAt: now + RATE_WINDOW_MS });
+    return true;
+  }
+  if (entry.count >= RATE_LIMIT) return false;
+  entry.count++;
+  return true;
+}
 
 const SYSTEM_INSTRUCTION = `You are Dr. Nisha, a warm, experienced, and empathetic doctor in a real clinical setting. You have years of experience and genuinely care about your patients.
 
@@ -82,9 +99,36 @@ async function updateConversationTitle(convId: number, title: string) {
 }
 
 export async function POST(
-  request: Request,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const ip =
+    request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+    request.headers.get("x-real-ip") ||
+    "unknown";
+
+  if (!checkRateLimit(ip)) {
+    const stream = new ReadableStream({
+      start(controller) {
+        const encoder = new TextEncoder();
+        controller.enqueue(
+          encoder.encode(
+            `data: ${JSON.stringify({ error: "Aap bahut jaldi jaldi message kar rahe hain. Ek minute ruk kar dobara try karein. 🙏" })}\n\n`
+          )
+        );
+        controller.close();
+      },
+    });
+    return new Response(stream, {
+      status: 429,
+      headers: {
+        "Content-Type": "text/event-stream",
+        "Cache-Control": "no-cache",
+        Connection: "keep-alive",
+      },
+    });
+  }
+
   const { id } = await params;
   const convId = parseInt(id);
 
