@@ -188,6 +188,7 @@ export function ChatArea({ activeId, onCreateNew, isCreating, userName, onError 
               <MessageBubble
                 message={{ id: -1, role: "assistant", content: streamingText }}
                 userName={userName}
+                isStreaming={true}
               />
             )}
 

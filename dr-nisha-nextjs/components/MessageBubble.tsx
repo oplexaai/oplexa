@@ -12,9 +12,10 @@ interface Message {
 interface Props {
   message: Message;
   userName?: string | null;
+  isStreaming?: boolean;
 }
 
-export function MessageBubble({ message, userName }: Props) {
+export function MessageBubble({ message, userName, isStreaming }: Props) {
   const isUser = message.role === "user";
 
   if (isUser) {
@@ -46,6 +47,9 @@ export function MessageBubble({ message, userName }: Props) {
           <div className="text-xs font-semibold text-blue-500 mb-1">Dr. Nisha</div>
           <div className="prose text-current">
             <ReactMarkdown>{message.content}</ReactMarkdown>
+            {isStreaming && (
+              <span className="inline-block w-0.5 h-4 bg-blue-500 ml-0.5 align-middle animate-pulse" />
+            )}
           </div>
         </div>
       </div>
