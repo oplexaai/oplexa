@@ -124,7 +124,7 @@ export async function POST(
         let fullResponse = "";
 
         for await (const chunk of result) {
-          const text = typeof chunk.text === "function" ? chunk.text() : (chunk as any).text;
+          const text = chunk.text;
           if (text) {
             fullResponse += text;
             send({ content: text });
