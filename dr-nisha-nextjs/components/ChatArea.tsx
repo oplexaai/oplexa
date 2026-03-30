@@ -224,7 +224,7 @@ export function ChatArea({ activeId, onCreateNew, isCreating, userName, onError 
               value={input}
               onChange={handleTextareaChange}
               onKeyDown={handleKeyDown}
-              placeholder="Ask Dr. Nisha a health question... (English / Hindi / Hinglish)"
+              placeholder="Ask Dr. Nisha about your symptoms..."
               rows={1}
               className="flex-1 bg-transparent resize-none text-foreground placeholder:text-muted-foreground text-sm focus:outline-none leading-relaxed"
               style={{ maxHeight: "120px" }}
