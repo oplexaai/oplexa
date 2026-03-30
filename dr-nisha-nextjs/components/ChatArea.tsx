@@ -24,6 +24,7 @@ export function ChatArea({ activeId, onCreateNew, isCreating, userName, onError 
   const [input, setInput] = useState("");
   const [streaming, setStreaming] = useState(false);
   const [streamingText, setStreamingText] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -40,6 +41,7 @@ export function ChatArea({ activeId, onCreateNew, isCreating, userName, onError 
   }, [messages, streamingText]);
 
   const loadMessages = async (id: number) => {
+    setIsLoading(true);
     try {
       const res = await fetch(`/api/gemini/conversations/${id}`);
       if (res.ok) {
@@ -47,6 +49,7 @@ export function ChatArea({ activeId, onCreateNew, isCreating, userName, onError 
         setMessages(data.messages || []);
       }
     } catch {}
+    setIsLoading(false);
   };
 
   const handleSend = async () => {
@@ -77,8 +80,9 @@ export function ChatArea({ activeId, onCreateNew, isCreating, userName, onError 
       });
 
       if (!res.ok) {
-        const err = await res.json();
-        onError(err?.error || "Failed to send message.");
+        let errMsg = "Failed to send message.";
+        try { const err = await res.json(); errMsg = err?.error || errMsg; } catch {}
+        onError(errMsg);
         setStreaming(false);
         return;
       }
@@ -145,24 +149,49 @@ export function ChatArea({ activeId, onCreateNew, isCreating, userName, onError 
 
   return (
     <div className="flex flex-col flex-1 min-w-0 h-full">
-      {/* Messages */}
+      {/* Messages area */}
       <div className="flex-1 overflow-y-auto pt-20 pb-4">
-        {!activeId && messages.length === 0 ? (
+        {!activeId ? (
           <EmptyState
             onStartNew={async () => { await onCreateNew(); }}
             isCreating={isCreating}
           />
+        ) : isLoading ? (
+          <div className="flex flex-col items-center justify-center h-full mt-32 text-muted-foreground">
+            <Loader2 size={28} className="animate-spin mb-3 text-blue-500" />
+            <p className="text-sm">Loading consultation...</p>
+          </div>
         ) : (
           <div className="max-w-3xl mx-auto py-4 space-y-1">
+
+            {/* "How can I help you today?" — shown when conversation is open but empty */}
+            {messages.length === 0 && !streaming && (
+              <div className="text-center mt-16 px-4">
+                <div className="w-20 h-20 mx-auto rounded-full overflow-hidden border-4 border-blue-500/20 shadow-lg mb-4">
+                  <img src="/dr-nisha.jpg" alt="Dr. Nisha" className="w-full h-full object-cover" />
+                </div>
+                <h3 className="text-2xl font-semibold mb-2 text-foreground">
+                  {userName ? `Hello, ${userName}!` : "How can I help you today?"}
+                </h3>
+                <p className="text-muted-foreground text-sm max-w-xs mx-auto">
+                  Describe your symptoms or ask a medical question in English, Hindi, or Hinglish.
+                </p>
+              </div>
+            )}
+
             {messages.map((msg) => (
               <MessageBubble key={msg.id} message={msg} userName={userName} />
             ))}
+
+            {/* Streaming response */}
             {streaming && streamingText && (
               <MessageBubble
                 message={{ id: -1, role: "assistant", content: streamingText }}
                 userName={userName}
               />
             )}
+
+            {/* Typing indicator */}
             {streaming && !streamingText && (
               <div className="flex justify-start px-4 py-1">
                 <div className="flex items-end gap-2">
@@ -170,6 +199,7 @@ export function ChatArea({ activeId, onCreateNew, isCreating, userName, onError 
                     <img src="/dr-nisha.jpg" alt="Dr. Nisha" className="w-full h-full object-cover" />
                   </div>
                   <div className="bg-muted rounded-2xl rounded-bl-sm px-4 py-3">
+                    <p className="text-xs font-medium text-blue-500 mb-1.5">Dr. Nisha is typing...</p>
                     <div className="flex gap-1 items-center h-4">
                       <span className="w-1.5 h-1.5 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
                       <span className="w-1.5 h-1.5 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
@@ -179,12 +209,13 @@ export function ChatArea({ activeId, onCreateNew, isCreating, userName, onError 
                 </div>
               </div>
             )}
+
             <div ref={bottomRef} />
           </div>
         )}
       </div>
 
-      {/* Input */}
+      {/* Input bar — always shown */}
       <div className="border-t border-border bg-background/80 backdrop-blur-md px-4 py-3">
         <div className="max-w-3xl mx-auto">
           <div className="flex items-end gap-3 bg-muted rounded-2xl px-4 py-3 border border-border focus-within:border-blue-500/50 focus-within:ring-1 focus-within:ring-blue-500/20 transition-all">
