@@ -141,7 +141,14 @@ export async function POST(
         send({ done: true });
       } catch (err: any) {
         console.error("Gemini stream error:", err);
-        send({ error: err?.message || "AI service error. Please try again." });
+        const raw = err?.message || "";
+        let errMsg = "Kuch gadbad ho gayi. Dobara try karein.";
+        if (raw.includes("429") || raw.includes("quota") || raw.includes("Too Many") || raw.includes("RESOURCE_EXHAUSTED")) {
+          errMsg = "Dr. Nisha thodi busy hain abhi. Thori der baad try karein. 🙏";
+        } else if (raw.includes("API_KEY") || raw.includes("invalid")) {
+          errMsg = "API key mein kuch problem hai. Admin se contact karein.";
+        }
+        send({ error: errMsg });
       } finally {
         controller.close();
       }
