@@ -12,7 +12,7 @@
     "next": "15.3.1",
     "react": "^19",
     "react-dom": "^19",
-    "@google/genai": "^1.0.1",
+    "groq-sdk": "^0.9.1",
     "mysql2": "^3.9.7",
     "lucide-react": "^0.400.0",
     "react-markdown": "^9.0.1",

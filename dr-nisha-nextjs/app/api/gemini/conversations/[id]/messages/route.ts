@@ -1,21 +1,15 @@
 import { isMySQLConfigured, getPool, initDb } from "@/lib/db";
 import { fsGetMessages, fsAddMessage, fsGetConversation } from "@/lib/fileStorage";
-import { GoogleGenAI } from "@google/genai";
+import Groq from "groq-sdk";
 import { NextRequest } from "next/server";
 
-const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
-const RATE_LIMIT = 8;
-const RATE_WINDOW_MS = 60 * 1000;
-
+const _rlMap = new Map<string, { c: number; r: number }>();
 function checkRateLimit(ip: string): boolean {
   const now = Date.now();
-  const entry = rateLimitMap.get(ip);
-  if (!entry || now > entry.resetAt) {
-    rateLimitMap.set(ip, { count: 1, resetAt: now + RATE_WINDOW_MS });
-    return true;
-  }
-  if (entry.count >= RATE_LIMIT) return false;
-  entry.count++;
+  const e = _rlMap.get(ip);
+  if (!e || now > e.r) { _rlMap.set(ip, { c: 1, r: now + 60000 }); return true; }
+  if (e.c >= 8) return false;
+  e.c++;
   return true;
 }
 
@@ -34,8 +28,8 @@ BEHAVIOR RULES:
 async function getMessageHistory(convId: number) {
   if (!isMySQLConfigured()) {
     return fsGetMessages(convId).map((m) => ({
-      role: m.role === "assistant" ? "model" : (m.role as "user" | "model"),
-      parts: [{ text: m.content }],
+      role: m.role === "assistant" ? "assistant" : "user" as "user" | "assistant",
+      content: m.content,
     }));
   }
   try {
@@ -46,13 +40,13 @@ async function getMessageHistory(convId: number) {
       [convId]
     )) as any[];
     return (rows as any[]).map((m) => ({
-      role: m.role === "assistant" ? "model" : "user",
-      parts: [{ text: m.content }],
+      role: m.role === "assistant" ? "assistant" : "user" as "user" | "assistant",
+      content: m.content,
     }));
   } catch {
     return fsGetMessages(convId).map((m) => ({
-      role: m.role === "assistant" ? "model" : (m.role as "user" | "model"),
-      parts: [{ text: m.content }],
+      role: m.role === "assistant" ? "assistant" : "user" as "user" | "assistant",
+      content: m.content,
     }));
   }
 }
@@ -108,25 +102,20 @@ export async function POST(
     "unknown";
 
   if (!checkRateLimit(ip)) {
-    const stream = new ReadableStream({
-      start(controller) {
-        const encoder = new TextEncoder();
-        controller.enqueue(
-          encoder.encode(
-            `data: ${JSON.stringify({ error: "Aap bahut jaldi jaldi message kar rahe hain. Ek minute ruk kar dobara try karein. 🙏" })}\n\n`
-          )
-        );
-        controller.close();
-      },
-    });
-    return new Response(stream, {
-      status: 429,
-      headers: {
-        "Content-Type": "text/event-stream",
-        "Cache-Control": "no-cache",
-        Connection: "keep-alive",
-      },
-    });
+    const encoder = new TextEncoder();
+    return new Response(
+      new ReadableStream({
+        start(controller) {
+          controller.enqueue(
+            encoder.encode(
+              `data: ${JSON.stringify({ error: "Aap bahut jaldi message kar rahe hain. Ek minute ruk kar dobara try karein. 🙏" })}\n\n`
+            )
+          );
+          controller.close();
+        },
+      }),
+      { status: 429, headers: { "Content-Type": "text/event-stream" } }
+    );
   }
 
   const { id } = await params;
@@ -146,9 +135,9 @@ export async function POST(
       };
 
       try {
-        const apiKey = process.env.GEMINI_API_KEY;
+        const apiKey = process.env.GROQ_API_KEY;
         if (!apiKey) {
-          send({ error: "GEMINI_API_KEY is not set. Please add it in Hostinger environment variables." });
+          send({ error: "GROQ_API_KEY is not set. Please add it in environment variables." });
           controller.close();
           return;
         }
@@ -157,18 +146,28 @@ export async function POST(
         const history = await getMessageHistory(convId);
         const historyWithoutLast = history.slice(0, -1);
 
-        const genai = new GoogleGenAI({ apiKey });
-        const chat = genai.chats.create({
-          model: "gemini-2.0-flash",
-          config: { systemInstruction: SYSTEM_INSTRUCTION },
-          history: historyWithoutLast,
+        const groq = new Groq({ apiKey });
+
+        const messages: Array<{ role: "system" | "user" | "assistant"; content: string }> = [
+          { role: "system", content: SYSTEM_INSTRUCTION },
+          ...historyWithoutLast.map((m) => ({
+            role: m.role as "user" | "assistant",
+            content: m.content,
+          })),
+          { role: "user", content: userContent },
+        ];
+
+        const result = await groq.chat.completions.create({
+          model: "llama-3.3-70b-versatile",
+          messages,
+          stream: true,
+          max_tokens: 1024,
+          temperature: 0.7,
         });
 
-        const result = await chat.sendMessageStream({ message: userContent });
         let fullResponse = "";
-
         for await (const chunk of result) {
-          const text = chunk.text;
+          const text = chunk.choices[0]?.delta?.content || "";
           if (text) {
             fullResponse += text;
             send({ content: text });
@@ -184,12 +183,12 @@ export async function POST(
 
         send({ done: true });
       } catch (err: any) {
-        console.error("Gemini stream error:", err);
+        console.error("Groq stream error:", err);
         const raw = err?.message || "";
         let errMsg = "Kuch gadbad ho gayi. Dobara try karein.";
-        if (raw.includes("429") || raw.includes("quota") || raw.includes("Too Many") || raw.includes("RESOURCE_EXHAUSTED")) {
+        if (raw.includes("429") || raw.includes("quota") || raw.includes("Too Many") || raw.includes("rate_limit_exceeded")) {
           errMsg = "Dr. Nisha thodi busy hain abhi. Thori der baad try karein. 🙏";
-        } else if (raw.includes("API_KEY") || raw.includes("invalid")) {
+        } else if (raw.includes("API_KEY") || raw.includes("invalid") || raw.includes("auth")) {
           errMsg = "API key mein kuch problem hai. Admin se contact karein.";
         }
         send({ error: errMsg });
