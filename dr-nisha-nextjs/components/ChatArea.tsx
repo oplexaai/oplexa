@@ -116,7 +116,6 @@ export function ChatArea({ activeId, onCreateNew, isCreating, userName, onError 
               setStreaming(false);
             }
             if (parsed.error) {
-              onError(parsed.error);
               setMessages((prev) => [
                 ...prev,
                 { id: Date.now() + 1, role: "assistant", content: `❌ ${parsed.error}` },
