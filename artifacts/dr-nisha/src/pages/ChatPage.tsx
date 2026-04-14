@@ -222,7 +222,7 @@ export default function ChatPage() {
     <div style={{
       width:"260px", minWidth:"260px", background:"var(--surface)", borderRight:"1px solid var(--border)",
       display:"flex", flexDirection:"column", height:"100%",
-      ...(isMobile ? { position:"fixed",left:sidebarOpen?"0":"-260px",top:0,bottom:0,zIndex:30,transition:"left 0.25s ease" } : {}),
+      ...(isMobile ? { position:"fixed",left:sidebarOpen?"0":"-260px",top:0,bottom:0,height:"100dvh",zIndex:30,transition:"left 0.25s ease" } : {}),
     }}>
       <div style={{ padding:"16px", borderBottom:"1px solid var(--border)" }}>
         <div style={{ display:"flex", alignItems:"center", marginBottom:"12px" }}>
@@ -294,7 +294,7 @@ export default function ChatPage() {
   );
 
   return (
-    <div style={{ display:"flex", height:"100vh", background:"var(--bg)", overflow:"hidden" }}>
+    <div style={{ display:"flex", height:"100dvh", background:"var(--bg)", overflow:"hidden" }}>
       {isMobile && sidebarOpen && (
         <div onClick={() => setSidebarOpen(false)} style={{ position:"fixed",inset:0,background:"rgba(0,0,0,0.6)",zIndex:20 }} />
       )}
@@ -399,8 +399,8 @@ export default function ChatPage() {
               {streaming ? "⬛" : "↑"}
             </button>
           </div>
-          <p style={{ textAlign:"center",fontSize:"11px",color:"var(--text-dim)",marginTop:"8px" }}>
-            Oplexa can make mistakes. Verify important information.
+          <p style={{ textAlign:"center",fontSize:"11px",color:"var(--accent)",marginTop:"8px",fontWeight:"600",letterSpacing:"0.02em" }}>
+            India's No.1 First AI — Oplexa
           </p>
         </div>
       </div>
