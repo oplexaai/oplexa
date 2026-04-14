@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { useLocation } from "wouter";
 import { useAuth } from "../lib/auth";
 import { streamChat, ChatMessage } from "../lib/api";
+import { fetchConversations, saveConversation, deleteConversation as apiDeleteConv, pinConversation as apiPinConv } from "../lib/conversations";
 import ReactMarkdown from "react-markdown";
 
 function CodeBlock({ inline, className, children }: { inline?: boolean; className?: string; children?: React.ReactNode }) {
@@ -124,7 +125,7 @@ function ConvItem({ c, activeId, setActiveId, setSidebarOpen, pinConv, deleteCon
 }
 
 export default function ChatPage() {
-  const { user, logout } = useAuth();
+  const { user, token, logout } = useAuth();
   const [, setLocation] = useLocation();
   const [conversations, setConversations] = useState<Conversation[]>(() => loadConversations());
   const [activeId, setActiveId] = useState<string | null>(() => {
@@ -139,12 +140,31 @@ export default function ChatPage() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<AbortController | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const dbSyncedRef = useRef(false);
 
   useEffect(() => {
     const handler = () => setIsMobile(window.innerWidth < 768);
     window.addEventListener("resize", handler);
     return () => window.removeEventListener("resize", handler);
   }, []);
+
+  useEffect(() => {
+    if (!token || dbSyncedRef.current) return;
+    dbSyncedRef.current = true;
+    fetchConversations(token).then((dbConvs) => {
+      if (dbConvs.length === 0) return;
+      const merged = dbConvs.map(dc => ({
+        id: dc.id,
+        title: dc.title,
+        messages: dc.messages.map(m => ({ role: m.role as "user" | "assistant", content: m.content })),
+        createdAt: dc.createdAt,
+        pinned: dc.pinned,
+      } as Conversation));
+      setConversations(merged);
+      saveConversations(merged);
+      setActiveId(prev => prev ?? merged[0]?.id ?? null);
+    });
+  }, [token]);
 
   const activeConv = conversations.find(c => c.id === activeId) ?? null;
 
@@ -228,6 +248,21 @@ export default function ChatPage() {
     );
     setConversations(finalConvs);
     saveConversations(finalConvs);
+
+    if (token) {
+      const savedConv = finalConvs.find(c => c.id === convId);
+      if (savedConv) {
+        saveConversation(token, {
+          id: savedConv.id,
+          title: savedConv.title,
+          pinned: savedConv.pinned ?? false,
+          createdAt: savedConv.createdAt,
+          updatedAt: Date.now(),
+          messages: savedConv.messages.map((m, i) => ({ id: String(i), role: m.role as "user" | "assistant", content: m.content, createdAt: savedConv.createdAt + i })),
+        });
+      }
+    }
+
     setStreamText("");
     setStreaming(false);
     abortRef.current = null;
@@ -244,13 +279,17 @@ export default function ChatPage() {
     setConversations(updated);
     saveConversations(updated);
     if (activeId === id) setActiveId(updated[0]?.id ?? null);
+    if (token) apiDeleteConv(token, id);
   }
 
   function pinConv(id: string, e: React.MouseEvent) {
     e.stopPropagation();
-    const updated = conversations.map(c => c.id === id ? { ...c, pinned: !c.pinned } : c);
+    const conv = conversations.find(c => c.id === id);
+    const newPinned = !conv?.pinned;
+    const updated = conversations.map(c => c.id === id ? { ...c, pinned: newPinned } : c);
     setConversations(updated);
     saveConversations(updated);
+    if (token) apiPinConv(token, id, newPinned);
   }
 
   const displayMessages = activeConv?.messages ?? [];
