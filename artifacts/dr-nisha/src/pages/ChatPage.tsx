@@ -295,11 +295,11 @@ export default function ChatPage() {
       {sidebar}
 
       <div style={{ flex:1, display:"flex", flexDirection:"column", height:"100%", overflow:"hidden" }}>
-        <div style={{ padding:"14px 20px", borderBottom:"1px solid var(--border)", display:"flex", alignItems:"center", gap:"12px", background:"var(--surface)" }}>
+        <div style={{ padding:"14px 20px", borderBottom:"1px solid var(--border)", display:"flex", alignItems:"center", gap:"12px", background:"var(--surface)", minHeight:"56px" }}>
           {isMobile && (
-            <button onClick={() => setSidebarOpen(!sidebarOpen)} style={{ width:"36px",height:"36px",color:"var(--text-muted)",fontSize:"20px",display:"flex",alignItems:"center",justifyContent:"center" }}>☰</button>
+            <button onClick={() => setSidebarOpen(!sidebarOpen)} style={{ width:"36px",height:"36px",color:"var(--text)",fontSize:"22px",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,background:"transparent",border:"none" }}>☰</button>
           )}
-          <span style={{ fontWeight:"600", fontSize:"15px", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", flex:1 }}>
+          <span style={{ fontWeight:"600", fontSize:"15px", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", flex:1, color:"var(--text)" }}>
             {activeConv ? activeConv.title : "Oplexa"}
           </span>
           <button onClick={() => setLocation("/profile")} style={{ width:"36px",height:"36px",background:"var(--accent)",borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"13px",fontWeight:"700",color:"white",flexShrink:0,overflow:"hidden",padding:0,border:"none" }}>
