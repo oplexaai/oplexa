@@ -29,16 +29,9 @@ const TOKEN_KEY = "oplexa_jwt_token";
 const USER_KEY = "oplexa_user_cache";
 
 function getApiBase(): string {
-  // Web browser: detect Replit Expo dev domain and strip 'expo.' prefix
-  if (Platform.OS === "web" && typeof window !== "undefined") {
-    const origin = window.location.origin;
-    // Replit Expo dev preview: https://xxx.expo.spock.replit.dev
-    if (origin.includes(".expo.")) {
-      return origin.replace(".expo.", ".") + "/api-server";
-    }
-    // Production web build on same domain (EC2 with nginx)
-    return `${origin}/api-server`;
-  }
+  // Web: Metro dev server proxies /api/* to the API server (port 8080)
+  // so we use relative URLs — no cross-origin issues
+  if (Platform.OS === "web") return "";
   // Native (Expo Go on phone): use env var domain
   const domain = process.env.EXPO_PUBLIC_DOMAIN || "";
   if (!domain) return "";
@@ -47,7 +40,9 @@ function getApiBase(): string {
 
 async function apiFetch(path: string, options: RequestInit = {}, token?: string | null): Promise<Response> {
   const base = getApiBase();
-  const url = `${base}/api${path}`;
+  // Web: relative URL → Metro proxies /api/* to localhost:8080
+  // Native: absolute URL via EXPO_PUBLIC_DOMAIN
+  const url = Platform.OS === "web" ? `/api${path}` : `${base}/api${path}`;
   console.log("[Oplexa API]", options.method || "GET", url);
   const headers: Record<string, string> = {
     "Content-Type": "application/json",

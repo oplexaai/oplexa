@@ -12,13 +12,9 @@ export function generateMessageId(): string {
 }
 
 export function getApiBase(): string {
-  if (Platform.OS === "web" && typeof window !== "undefined") {
-    const origin = window.location.origin;
-    if (origin.includes(".expo.")) {
-      return origin.replace(".expo.", ".") + "/api-server";
-    }
-    return `${origin}/api-server`;
-  }
+  // Web: Metro dev server proxies /api/* → localhost:8080 (same-origin, no CORS issues)
+  if (Platform.OS === "web") return "";
+  // Native: use env var domain
   const domain = process.env.EXPO_PUBLIC_DOMAIN || "";
   if (!domain) return "";
   return `https://${domain}/api-server`;
@@ -32,7 +28,10 @@ export async function streamChat(
   token?: string | null
 ): Promise<void> {
   const apiBase = getApiBase();
-  if (!apiBase) {
+  // Web: /api/chat (relative, Metro proxies) | Native: absolute URL
+  const chatUrl = Platform.OS === "web" ? "/api/chat" : `${apiBase}/api/chat`;
+
+  if (Platform.OS !== "web" && !apiBase) {
     onError?.(new Error("API server not configured. Set EXPO_PUBLIC_DOMAIN."));
     return;
   }
@@ -44,7 +43,7 @@ export async function streamChat(
     };
     if (token) headers["Authorization"] = `Bearer ${token}`;
 
-    const response = await fetch(`${apiBase}/api/chat`, {
+    const response = await fetch(chatUrl, {
       method: "POST",
       headers,
       body: JSON.stringify({ messages }),
