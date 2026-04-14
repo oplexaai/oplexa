@@ -42,6 +42,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 app.use("/api", router);
+app.use("/api-server/api", router);
 
 const DEPLOY_SCRIPT = "/home/runner/workspace/deploy_oplexa.py";
 app.get("/dl/deploy_oplexa.py", (_req, res) => {

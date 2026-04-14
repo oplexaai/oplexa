@@ -12,6 +12,13 @@ export function generateMessageId(): string {
 }
 
 export function getApiBase(): string {
+  if (Platform.OS === "web" && typeof window !== "undefined") {
+    const origin = window.location.origin;
+    if (origin.includes(".expo.")) {
+      return origin.replace(".expo.", ".") + "/api-server";
+    }
+    return `${origin}/api-server`;
+  }
   const domain = process.env.EXPO_PUBLIC_DOMAIN || "";
   if (!domain) return "";
   return `https://${domain}/api-server`;

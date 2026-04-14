@@ -29,10 +29,18 @@ const TOKEN_KEY = "oplexa_jwt_token";
 const USER_KEY = "oplexa_user_cache";
 
 function getApiBase(): string {
-  const domain = process.env.EXPO_PUBLIC_DOMAIN || "";
-  if (Platform.OS === "web" && !domain) {
-    return "";
+  // Web browser: detect Replit Expo dev domain and strip 'expo.' prefix
+  if (Platform.OS === "web" && typeof window !== "undefined") {
+    const origin = window.location.origin;
+    // Replit Expo dev preview: https://xxx.expo.spock.replit.dev
+    if (origin.includes(".expo.")) {
+      return origin.replace(".expo.", ".") + "/api-server";
+    }
+    // Production web build on same domain (EC2 with nginx)
+    return `${origin}/api-server`;
   }
+  // Native (Expo Go on phone): use env var domain
+  const domain = process.env.EXPO_PUBLIC_DOMAIN || "";
   if (!domain) return "";
   return `https://${domain}/api-server`;
 }
@@ -40,6 +48,7 @@ function getApiBase(): string {
 async function apiFetch(path: string, options: RequestInit = {}, token?: string | null): Promise<Response> {
   const base = getApiBase();
   const url = `${base}/api${path}`;
+  console.log("[Oplexa API]", options.method || "GET", url);
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
