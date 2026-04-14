@@ -1,14 +1,14 @@
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
-import React from "react";
+import React, { useState, useMemo } from "react";
 import {
-  Animated,
-  FlatList,
   Image,
   Platform,
   Pressable,
+  SectionList,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -26,7 +26,8 @@ export function ConversationDrawer({ visible, onClose, onNewChat }: Props) {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { user, logout } = useAuth();
-  const { conversations, activeConversation, setActiveConversation, deleteConversation } = useChat();
+  const { conversations, activeConversation, setActiveConversation, deleteConversation, pinConversation } = useChat();
+  const [search, setSearch] = useState("");
 
   if (!visible) return null;
 
@@ -40,6 +41,29 @@ export function ConversationDrawer({ visible, onClose, onNewChat }: Props) {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     deleteConversation(id);
   };
+
+  const handlePin = (id: string) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    pinConversation(id);
+  };
+
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return conversations;
+    return conversations.filter(
+      c => c.title.toLowerCase().includes(q) ||
+        c.messages.some(m => m.content.toLowerCase().includes(q))
+    );
+  }, [conversations, search]);
+
+  const sections = useMemo(() => {
+    const pinned = filtered.filter(c => c.pinned);
+    const unpinned = filtered.filter(c => !c.pinned);
+    const result = [];
+    if (pinned.length > 0) result.push({ title: "📌 Pinned", data: pinned });
+    if (unpinned.length > 0) result.push({ title: "Chats", data: unpinned });
+    return result;
+  }, [filtered]);
 
   const topPad = Platform.OS === "web" ? 67 : insets.top;
   const bottomPad = Platform.OS === "web" ? 34 : insets.bottom;
@@ -69,17 +93,46 @@ export function ConversationDrawer({ visible, onClose, onNewChat }: Props) {
           </Pressable>
         </View>
 
+        <View style={[styles.searchContainer, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
+          <Feather name="search" size={14} color={colors.mutedForeground} />
+          <TextInput
+            value={search}
+            onChangeText={setSearch}
+            placeholder="Search chats..."
+            placeholderTextColor={colors.mutedForeground}
+            style={[styles.searchInput, { color: colors.foreground }]}
+          />
+          {search.length > 0 && (
+            <Pressable onPress={() => setSearch("")} hitSlop={8}>
+              <Feather name="x" size={14} color={colors.mutedForeground} />
+            </Pressable>
+          )}
+        </View>
+
         {conversations.length === 0 ? (
           <View style={styles.emptyState}>
             <Feather name="message-square" size={32} color={colors.mutedForeground} />
             <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>No conversations yet</Text>
           </View>
+        ) : filtered.length === 0 ? (
+          <View style={styles.emptyState}>
+            <Feather name="search" size={28} color={colors.mutedForeground} />
+            <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>No results found</Text>
+          </View>
         ) : (
-          <FlatList
-            data={conversations}
+          <SectionList
+            sections={sections}
             keyExtractor={(item) => item.id}
             style={styles.list}
             showsVerticalScrollIndicator={false}
+            stickySectionHeadersEnabled={false}
+            renderSectionHeader={({ section }) => (
+              sections.length > 1 ? (
+                <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>
+                  {section.title}
+                </Text>
+              ) : null
+            )}
             renderItem={({ item }) => (
               <Pressable
                 onPress={() => handleSelectConv(item)}
@@ -97,7 +150,10 @@ export function ConversationDrawer({ visible, onClose, onNewChat }: Props) {
                   },
                 ]}
               >
-                <Feather name="message-circle" size={14} color={colors.mutedForeground} style={{ marginTop: 2 }} />
+                {item.pinned
+                  ? <Text style={{ fontSize: 11, marginTop: 2 }}>📌</Text>
+                  : <Feather name="message-circle" size={14} color={colors.mutedForeground} style={{ marginTop: 2 }} />
+                }
                 <Text
                   style={[styles.convTitle, { color: colors.foreground }]}
                   numberOfLines={1}
@@ -105,8 +161,19 @@ export function ConversationDrawer({ visible, onClose, onNewChat }: Props) {
                   {item.title}
                 </Text>
                 <Pressable
+                  onPress={() => handlePin(item.id)}
+                  style={styles.actionBtn}
+                  hitSlop={8}
+                >
+                  <Feather
+                    name="bookmark"
+                    size={13}
+                    color={item.pinned ? colors.primary : colors.mutedForeground}
+                  />
+                </Pressable>
+                <Pressable
                   onPress={() => handleDelete(item.id)}
-                  style={styles.deleteBtn}
+                  style={styles.actionBtn}
                   hitSlop={8}
                 >
                   <Feather name="x" size={13} color={colors.mutedForeground} />
@@ -166,16 +233,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 16,
-    marginBottom: 16,
+    marginBottom: 12,
   },
   drawerLogoImg: {
     height: 32,
     width: 150,
-  },
-  brandName: {
-    fontSize: 22,
-    fontFamily: "Inter_700Bold",
-    letterSpacing: -0.5,
   },
   newBtn: {
     width: 34,
@@ -183,6 +245,32 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     alignItems: "center",
     justifyContent: "center",
+  },
+  searchContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginHorizontal: 12,
+    marginBottom: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 10,
+    borderWidth: 1,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 13,
+    fontFamily: "Inter_400Regular",
+    padding: 0,
+  },
+  sectionLabel: {
+    fontSize: 10,
+    fontFamily: "Inter_700Bold",
+    letterSpacing: 0.8,
+    textTransform: "uppercase",
+    paddingHorizontal: 16,
+    paddingTop: 10,
+    paddingBottom: 4,
   },
   list: {
     flex: 1,
@@ -192,7 +280,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 8,
     paddingVertical: 10,
-    paddingHorizontal: 16,
+    paddingHorizontal: 14,
     borderLeftWidth: 2,
   },
   convTitle: {
@@ -200,7 +288,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: "Inter_400Regular",
   },
-  deleteBtn: {
+  actionBtn: {
     padding: 4,
   },
   emptyState: {

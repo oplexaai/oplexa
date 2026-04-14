@@ -14,6 +14,7 @@ export interface Conversation {
   createdAt: number;
   updatedAt: number;
   messages: Message[];
+  pinned?: boolean;
 }
 
 interface ChatContextType {
@@ -23,6 +24,7 @@ interface ChatContextType {
   createConversation: () => Conversation;
   updateConversation: (conv: Conversation) => Promise<void>;
   deleteConversation: (id: string) => Promise<void>;
+  pinConversation: (id: string) => void;
   clearAllConversations: () => Promise<void>;
 }
 
@@ -85,6 +87,14 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     setActiveConversation((prev) => (prev?.id === id ? null : prev));
   }, []);
 
+  const pinConversation = useCallback((id: string) => {
+    setConversations((prev) => {
+      const updated = prev.map((c) => c.id === id ? { ...c, pinned: !c.pinned } : c);
+      saveConversations(updated);
+      return updated;
+    });
+  }, []);
+
   const clearAllConversations = useCallback(async () => {
     setConversations([]);
     setActiveConversation(null);
@@ -100,6 +110,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
         createConversation,
         updateConversation,
         deleteConversation,
+        pinConversation,
         clearAllConversations,
       }}
     >
