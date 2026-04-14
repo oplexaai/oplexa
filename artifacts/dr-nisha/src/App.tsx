@@ -1,32 +1,39 @@
-import { Switch, Route, Router as WouterRouter } from "wouter";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { Toaster } from "@/components/ui/toaster";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import ChatPage from "@/pages/ChatPage";
-import NotFound from "@/pages/not-found";
+import { Switch, Route, Redirect } from "wouter";
+import { AuthProvider, useAuth } from "./lib/auth";
+import AuthPage from "./pages/AuthPage";
+import ChatPage from "./pages/ChatPage";
+import ProfilePage from "./pages/ProfilePage";
 
-const queryClient = new QueryClient();
+function AppRoutes() {
+  const { user, loading } = useAuth();
 
-function Router() {
+  if (loading) {
+    return (
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100vh", background: "#000" }}>
+        <div className="spinner" />
+      </div>
+    );
+  }
+
   return (
     <Switch>
-      <Route path="/" component={ChatPage} />
-      <Route component={NotFound} />
+      <Route path="/auth">
+        {user ? <Redirect to="/" /> : <AuthPage />}
+      </Route>
+      <Route path="/profile">
+        {!user ? <Redirect to="/auth" /> : <ProfilePage />}
+      </Route>
+      <Route path="/">
+        {!user ? <Redirect to="/auth" /> : <ChatPage />}
+      </Route>
     </Switch>
   );
 }
 
-function App() {
+export default function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
-          <Router />
-        </WouterRouter>
-        <Toaster />
-      </TooltipProvider>
-    </QueryClientProvider>
+    <AuthProvider>
+      <AppRoutes />
+    </AuthProvider>
   );
 }
-
-export default App;

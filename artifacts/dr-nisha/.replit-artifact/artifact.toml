@@ -1,6 +1,6 @@
 kind = "web"
 previewPath = "/"
-title = "Dr. Nisha - Medical Chatbot"
+title = "Oplexa - AI Assistant"
 version = "1.0.0"
 id = "artifacts/dr-nisha"
 router = "path"
