@@ -1,65 +1,88 @@
 #!/bin/bash
 # ============================================================
-#  Oplexa Full-Stack EC2 Deploy Script — Ubuntu 22.04
-#  Deploys: API server + Web app + configures Nginx
+#  Oplexa EC2 Deploy Script — GitHub Based
+#  Ubuntu 22.04 | Node 20 | PostgreSQL | Nginx | PM2 | SSL
 #
-#  Usage:
-#    GROQ_API_KEY=gsk_xxx DOMAIN=oplexa.in bash deploy_ec2.sh
+#  Run this directly on your EC2 terminal:
 #
-#  For Expo APK build (run locally after deploy):
-#    EXPO_PUBLIC_API_URL=https://oplexa.in eas build --platform android
+#  curl -fsSL https://raw.githubusercontent.com/oplexaai/oplexa/main/deploy_ec2.sh | \
+#    GROQ_API_KEY=gsk_xxx bash
+#
+#  OR after git clone:
+#    GROQ_API_KEY=gsk_xxx bash deploy_ec2.sh
 # ============================================================
 set -e
 
+GITHUB_REPO="https://github.com/oplexaai/oplexa.git"
 DOMAIN="${DOMAIN:-oplexa.in}"
-APP_DIR="/home/ubuntu/oplexa-api"
-WEB_DIR="/home/ubuntu/oplexa-web"
+DEPLOY_DIR="/home/ubuntu/oplexa"
 DB_NAME="oplexa_db"
 DB_USER="oplexa_user"
 DB_PASS="${DB_PASS:-$(openssl rand -hex 16)}"
 JWT_SECRET="${JWT_SECRET:-$(openssl rand -hex 32)}"
 GROQ_KEY="${GROQ_API_KEY:-}"
 NODE_PORT=4000
+EMAIL="${EMAIL:-contact@oplexa.in}"
 
-RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; NC='\033[0m'
+RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; CYAN='\033[0;36m'; NC='\033[0m'
 log()  { echo -e "${GREEN}[+]${NC} $1"; }
 warn() { echo -e "${YELLOW}[!]${NC} $1"; }
+info() { echo -e "${CYAN}[i]${NC} $1"; }
 err()  { echo -e "${RED}[✗]${NC} $1"; exit 1; }
 
+echo ""
+echo -e "${GREEN}╔════════════════════════════════════════════╗${NC}"
+echo -e "${GREEN}║     Oplexa EC2 Deployment Starting...     ║${NC}"
+echo -e "${GREEN}╚════════════════════════════════════════════╝${NC}"
+echo ""
+
 # ── 1. System packages ───────────────────────────────────────
-log "Updating system..."
+log "Updating system packages..."
 sudo apt-get update -qq
-sudo apt-get install -y -qq curl wget git nginx certbot python3-certbot-nginx postgresql postgresql-contrib ufw
+sudo apt-get install -y -qq curl wget git nginx certbot python3-certbot-nginx \
+  postgresql postgresql-contrib ufw build-essential
 
 # ── 2. Node.js 20 ────────────────────────────────────────────
-if ! command -v node &>/dev/null || [[ "$(node -v)" < "v20" ]]; then
+if ! command -v node &>/dev/null || [[ "$(node -v | cut -d'.' -f1 | tr -d 'v')" -lt 20 ]]; then
   log "Installing Node.js 20..."
-  curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
-  sudo apt-get install -y nodejs
+  curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash - >/dev/null
+  sudo apt-get install -y nodejs >/dev/null
 fi
 log "Node: $(node -v)  NPM: $(npm -v)"
 
-# ── 3. PM2 + pnpm ────────────────────────────────────────────
-sudo npm install -g pm2 pnpm --silent
-log "PM2: $(pm2 -v)  pnpm: $(pnpm -v)"
+# ── 3. pnpm + PM2 ────────────────────────────────────────────
+sudo npm install -g pnpm pm2 --silent
+log "pnpm: $(pnpm -v)  PM2: $(pm2 -v)"
 
 # ── 4. PostgreSQL ─────────────────────────────────────────────
 log "Configuring PostgreSQL..."
 sudo systemctl enable --now postgresql
 
-sudo -u postgres psql <<SQLEOF
+# Check if DB already exists (re-deploy scenario)
+DB_EXISTS=$(sudo -u postgres psql -tAc "SELECT 1 FROM pg_database WHERE datname='${DB_NAME}'" 2>/dev/null || echo "0")
+
+if [ "$DB_EXISTS" != "1" ]; then
+  sudo -u postgres psql <<SQLEOF
 DO \$\$
 BEGIN
   IF NOT EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = '${DB_USER}') THEN
     CREATE ROLE ${DB_USER} LOGIN PASSWORD '${DB_PASS}';
+  ELSE
+    ALTER ROLE ${DB_USER} WITH PASSWORD '${DB_PASS}';
   END IF;
 END
 \$\$;
+CREATE DATABASE ${DB_NAME} OWNER ${DB_USER};
+SQLEOF
+  log "PostgreSQL database created: ${DB_NAME}"
+else
+  # Still update password
+  sudo -u postgres psql -c "ALTER ROLE ${DB_USER} WITH PASSWORD '${DB_PASS}';" 2>/dev/null || true
+  warn "Database ${DB_NAME} already exists — skipping create"
+fi
 
-SELECT 'CREATE DATABASE ${DB_NAME} OWNER ${DB_USER}' WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = '${DB_NAME}')\gexec
-
-\c ${DB_NAME}
-
+# Create tables
+sudo -u postgres psql -d ${DB_NAME} <<SQLEOF
 CREATE TABLE IF NOT EXISTS oplexa_users (
   id SERIAL PRIMARY KEY,
   name VARCHAR(100) NOT NULL,
@@ -72,82 +95,82 @@ CREATE TABLE IF NOT EXISTS oplexa_users (
   updated_at TIMESTAMPTZ DEFAULT NOW() NOT NULL
 );
 SQLEOF
-log "PostgreSQL ready: ${DB_NAME}"
+log "Database tables ready"
 
 DATABASE_URL="postgresql://${DB_USER}:${DB_PASS}@localhost:5432/${DB_NAME}"
 
-# ── 5. API app directory ──────────────────────────────────────
-log "Setting up API directory..."
-sudo mkdir -p $APP_DIR
-sudo chown ubuntu:ubuntu $APP_DIR
+# ── 5. Clone or update repo ───────────────────────────────────
+log "Fetching latest code from GitHub..."
+if [ -d "${DEPLOY_DIR}/.git" ]; then
+  cd ${DEPLOY_DIR}
+  git fetch origin
+  git reset --hard origin/main
+  log "Code updated from GitHub"
+else
+  git clone ${GITHUB_REPO} ${DEPLOY_DIR}
+  cd ${DEPLOY_DIR}
+  log "Repository cloned"
+fi
 
-cat > $APP_DIR/package.json <<'PKGJSON'
-{
-  "name": "oplexa-api",
-  "version": "1.0.0",
-  "type": "module",
-  "scripts": {
-    "start": "node --enable-source-maps dist/index.mjs"
-  },
-  "dependencies": {
-    "@google/genai": "^1.46.0",
-    "bcryptjs": "^3.0.3",
-    "cors": "^2",
-    "drizzle-orm": "^0.44.2",
-    "express": "^5",
-    "jsonwebtoken": "^9.0.3",
-    "pg": "^8.16.0",
-    "pino": "^9",
-    "pino-http": "^10"
-  }
-}
-PKGJSON
-
-# ── 6. .env file ──────────────────────────────────────────────
-log "Writing .env..."
-cat > $APP_DIR/.env <<ENVEOF
+# ── 6. Write .env for API server ──────────────────────────────
+log "Writing API environment config..."
+cat > ${DEPLOY_DIR}/artifacts/api-server/.env <<ENVEOF
 PORT=${NODE_PORT}
 DATABASE_URL=${DATABASE_URL}
 SESSION_SECRET=${JWT_SECRET}
 GROQ_API_KEY=${GROQ_KEY}
 NODE_ENV=production
-ALLOWED_ORIGINS=https://${DOMAIN},https://www.${DOMAIN}
+ALLOWED_ORIGINS=https://${DOMAIN},https://www.${DOMAIN},http://${DOMAIN}
 ENVEOF
-warn ".env written — add your GROQ_API_KEY if not set"
 
-# ── 7. Copy API source ────────────────────────────────────────
-log "Copying API source files..."
-if [ -d "/tmp/oplexa-src" ]; then
-  cp -r /tmp/oplexa-src/. $APP_DIR/
-  cd $APP_DIR
-  npm install --silent
-  log "API dependencies installed"
-else
-  warn "No /tmp/oplexa-src found — upload API build manually to $APP_DIR"
-fi
+# Also save deploy config for future re-deploys
+cat > ${DEPLOY_DIR}/.deploy-config <<DEPLOYEOF
+DB_PASS=${DB_PASS}
+JWT_SECRET=${JWT_SECRET}
+DATABASE_URL=${DATABASE_URL}
+DEPLOYEOF
+chmod 600 ${DEPLOY_DIR}/.deploy-config
+log ".env saved"
 
-# ── 8. Web app static files ───────────────────────────────────
-log "Setting up web app directory..."
-sudo mkdir -p $WEB_DIR
-sudo chown ubuntu:ubuntu $WEB_DIR
+# ── 7. Install dependencies & build API ───────────────────────
+log "Installing dependencies (this may take a minute)..."
+cd ${DEPLOY_DIR}
+pnpm install --frozen-lockfile 2>/dev/null || pnpm install
 
-if [ -d "/tmp/oplexa-web" ]; then
-  cp -r /tmp/oplexa-web/. $WEB_DIR/
-  log "Web app files copied to $WEB_DIR"
-else
-  warn "No /tmp/oplexa-web found — upload built web files manually to $WEB_DIR"
-  warn "Build locally with: pnpm --filter @workspace/dr-nisha run build"
-  warn "Then upload: scp -r artifacts/dr-nisha/dist/public/* ubuntu@EC2_IP:${WEB_DIR}/"
-fi
+log "Building API server..."
+cd ${DEPLOY_DIR}
+pnpm --filter @workspace/api-server run build
+log "API server built"
 
-# ── 9. Nginx config ───────────────────────────────────────────
-log "Configuring nginx..."
-sudo tee /etc/nginx/sites-available/oplexa <<NGINXCONF
+# ── 8. Build Web app ──────────────────────────────────────────
+log "Building web app..."
+cd ${DEPLOY_DIR}
+VITE_API_URL=https://${DOMAIN} pnpm --filter @workspace/dr-nisha run build
+log "Web app built"
+
+# ── 9. PM2 — start/restart API ───────────────────────────────
+log "Starting API server with PM2..."
+cd ${DEPLOY_DIR}/artifacts/api-server
+pm2 delete oplexa-api 2>/dev/null || true
+pm2 start node --name "oplexa-api" -- --enable-source-maps ./dist/index.mjs
+pm2 save
+# Auto-start PM2 on reboot
+sudo env PATH=$PATH:/usr/bin pm2 startup systemd -u ubuntu --hp /home/ubuntu 2>/dev/null || true
+log "PM2 running"
+
+# ── 10. Nginx config ──────────────────────────────────────────
+log "Configuring Nginx..."
+WEB_DIST="${DEPLOY_DIR}/artifacts/dr-nisha/dist/public"
+
+sudo tee /etc/nginx/sites-available/oplexa > /dev/null <<NGINXCONF
 server {
     listen 80;
     server_name ${DOMAIN} www.${DOMAIN};
 
-    # Streaming / SSE support
+    # Increase body size for profile photo uploads (base64)
+    client_max_body_size 15M;
+
+    # Streaming / SSE
     proxy_read_timeout 300;
     proxy_connect_timeout 60;
     proxy_send_timeout 300;
@@ -156,7 +179,7 @@ server {
     gzip on;
     gzip_types text/plain application/json application/javascript text/css text/xml;
 
-    # ── API proxy ──────────────────────────────────────────────
+    # ── API ──────────────────────────────────────────────────
     location /api/ {
         proxy_pass http://127.0.0.1:${NODE_PORT}/api/;
         proxy_http_version 1.1;
@@ -164,41 +187,36 @@ server {
         proxy_set_header X-Real-IP \$remote_addr;
         proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto \$scheme;
-
-        # SSE / streaming
         proxy_set_header Connection '';
         proxy_buffering off;
         proxy_cache off;
         chunked_transfer_encoding on;
-
-        # CORS — allows Expo mobile app to call from any origin
         add_header Access-Control-Allow-Origin "*" always;
         add_header Access-Control-Allow-Methods "GET,POST,PUT,PATCH,DELETE,OPTIONS" always;
         add_header Access-Control-Allow-Headers "Content-Type,Authorization,Accept" always;
         if (\$request_method = OPTIONS) { return 204; }
     }
 
-    # ── Health check ───────────────────────────────────────────
+    # ── Health ───────────────────────────────────────────────
     location /health {
         proxy_pass http://127.0.0.1:${NODE_PORT}/health;
     }
 
-    # ── Web app static files ───────────────────────────────────
-    location / {
-        root ${WEB_DIR};
-        index index.html;
-        # SPA fallback — React Router
-        try_files \$uri \$uri/ /index.html;
-        expires 1h;
-        add_header Cache-Control "public, must-revalidate";
-    }
-
-    # ── Long-cache for assets ──────────────────────────────────
+    # ── Static assets (long cache) ───────────────────────────
     location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff2?)$ {
-        root ${WEB_DIR};
+        root ${WEB_DIST};
         expires 1y;
         add_header Cache-Control "public, immutable";
         try_files \$uri =404;
+    }
+
+    # ── SPA ──────────────────────────────────────────────────
+    location / {
+        root ${WEB_DIST};
+        index index.html;
+        try_files \$uri \$uri/ /index.html;
+        expires 1h;
+        add_header Cache-Control "public, must-revalidate";
     }
 }
 NGINXCONF
@@ -208,56 +226,46 @@ sudo rm -f /etc/nginx/sites-enabled/default
 sudo nginx -t && sudo systemctl restart nginx
 log "Nginx configured"
 
-# ── 10. Firewall ───────────────────────────────────────────────
-log "Setting up firewall..."
+# ── 11. Firewall ──────────────────────────────────────────────
+log "Configuring firewall..."
 sudo ufw allow OpenSSH
 sudo ufw allow 'Nginx Full'
 sudo ufw --force enable
 
-# ── 11. PM2 process ───────────────────────────────────────────
-if [ -f "$APP_DIR/dist/index.mjs" ]; then
-  log "Starting API with PM2..."
-  cd $APP_DIR
-  pm2 delete oplexa-api 2>/dev/null || true
-  pm2 start npm --name "oplexa-api" -- run start
-  pm2 save
-  sudo pm2 startup systemd -u ubuntu --hp /home/ubuntu
-else
-  warn "API dist not found — start manually: cd $APP_DIR && pm2 start npm --name oplexa-api -- run start"
+# ── 12. SSL (Let's Encrypt) ───────────────────────────────────
+if command -v certbot &>/dev/null; then
+  log "Setting up HTTPS with Let's Encrypt..."
+  if sudo certbot --nginx -d ${DOMAIN} -d www.${DOMAIN} \
+      --non-interactive --agree-tos -m ${EMAIL} 2>/dev/null; then
+    log "HTTPS enabled!"
+  else
+    warn "SSL setup failed — DNS may not be pointing to this server yet"
+    warn "Once DNS is set, run: sudo certbot --nginx -d ${DOMAIN} -d www.${DOMAIN}"
+  fi
 fi
 
-# ── 12. SSL ────────────────────────────────────────────────────
-if [ -n "$DOMAIN" ] && [ "$DOMAIN" != "localhost" ]; then
-  warn "To enable HTTPS, run:"
-  warn "  sudo certbot --nginx -d ${DOMAIN} -d www.${DOMAIN} --non-interactive --agree-tos -m your@email.com"
-fi
-
-# ── Done ──────────────────────────────────────────────────────
-EC2_IP=$(curl -s ifconfig.me 2>/dev/null || echo "YOUR_EC2_IP")
+# ── Done! ─────────────────────────────────────────────────────
+EC2_IP=$(curl -s ifconfig.me 2>/dev/null || hostname -I | awk '{print $1}')
 echo ""
-echo -e "${GREEN}═══════════════════════════════════════════════════════${NC}"
-echo -e "${GREEN}  Oplexa Full Stack Deployed!${NC}"
-echo -e "${GREEN}═══════════════════════════════════════════════════════${NC}"
+echo -e "${GREEN}╔════════════════════════════════════════════╗${NC}"
+echo -e "${GREEN}║       Oplexa Deployed Successfully!       ║${NC}"
+echo -e "${GREEN}╚════════════════════════════════════════════╝${NC}"
 echo ""
-echo -e "  Website:      http://${DOMAIN}             (serves web app)"
-echo -e "  API:          http://${DOMAIN}/api         (proxied to Node.js)"
-echo -e "  Health:       http://${DOMAIN}/health"
-echo -e "  PM2 status:   pm2 status"
-echo -e "  API logs:     pm2 logs oplexa-api"
+echo -e "  ${CYAN}EC2 IP:${NC}       ${EC2_IP}"
+echo -e "  ${CYAN}Website:${NC}      https://${DOMAIN}"
+echo -e "  ${CYAN}API:${NC}          https://${DOMAIN}/api"
+echo -e "  ${CYAN}Health:${NC}       https://${DOMAIN}/health"
 echo ""
-echo -e "${YELLOW}Next steps:${NC}"
-echo -e "  1. Point DNS A record: ${DOMAIN} → ${EC2_IP}"
-echo -e "  2. Enable HTTPS:  sudo certbot --nginx -d ${DOMAIN} -d www.${DOMAIN}"
+echo -e "${YELLOW}Useful commands:${NC}"
+echo -e "  pm2 status              — API process status"
+echo -e "  pm2 logs oplexa-api     — Live API logs"
+echo -e "  pm2 restart oplexa-api  — Restart API"
 echo ""
-echo -e "${YELLOW}Upload web app build (run on your machine):${NC}"
-echo -e "  pnpm --filter @workspace/dr-nisha run build"
-echo -e "  scp -r artifacts/dr-nisha/dist/public/. ubuntu@${EC2_IP}:${WEB_DIR}/"
+echo -e "${YELLOW}GoDaddy DNS — add these A records:${NC}"
+echo -e "  Type: A   Name: @    Value: ${EC2_IP}   TTL: 600"
+echo -e "  Type: A   Name: www  Value: ${EC2_IP}   TTL: 600"
 echo ""
-echo -e "${YELLOW}Upload API build (run on your machine):${NC}"
-echo -e "  pnpm --filter @workspace/api-server run build"
-echo -e "  scp -r artifacts/api-server/dist ubuntu@${EC2_IP}:${APP_DIR}/"
-echo ""
-echo -e "${YELLOW}Build Expo Android APK (run on your machine):${NC}"
+echo -e "${YELLOW}Build Expo APK (run on your local machine):${NC}"
 echo -e "  EXPO_PUBLIC_API_URL=https://${DOMAIN} eas build --platform android"
 echo ""
-echo -e "  DB: ${DATABASE_URL}"
+echo -e "  DB URL: ${DATABASE_URL}"
