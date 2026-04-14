@@ -1,5 +1,7 @@
 # Workspace
 
+> Full setup guide: see `README.md` | DB schema: `schema.sql` | DB backup: `backup.sql`
+
 ## Overview
 
 pnpm workspace monorepo using TypeScript. Each package manages its own dependencies.
