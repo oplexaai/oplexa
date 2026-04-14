@@ -1,7 +1,8 @@
 import React, { memo } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { Image, StyleSheet, Text, View } from "react-native";
 import { useColors } from "@/hooks/useColors";
 import { Message } from "@/context/ChatContext";
+import { useAuth } from "@/context/AuthContext";
 
 interface Props {
   message: Message;
@@ -11,7 +12,15 @@ interface Props {
 
 export const MessageBubble = memo(function MessageBubble({ message, userName, isStreaming }: Props) {
   const colors = useColors();
+  const { user } = useAuth();
   const isUser = message.role === "user";
+
+  const initials = (user?.name || userName || "U")
+    .split(" ")
+    .map(w => w[0])
+    .slice(0, 2)
+    .join("")
+    .toUpperCase();
 
   if (isUser) {
     return (
@@ -19,20 +28,23 @@ export const MessageBubble = memo(function MessageBubble({ message, userName, is
         <View style={[styles.bubble, styles.userBubble, { backgroundColor: colors.userBubble }]}>
           <Text style={[styles.text, { color: "#FFFFFF" }]}>{message.content}</Text>
         </View>
-        <View style={[styles.avatar, { backgroundColor: colors.primary }]}>
-          <Text style={styles.avatarText}>
-            {userName ? userName.charAt(0).toUpperCase() : "U"}
-          </Text>
-        </View>
+        {user?.avatarUrl ? (
+          <Image source={{ uri: user.avatarUrl }} style={styles.userAvatarImg} />
+        ) : (
+          <View style={[styles.avatar, { backgroundColor: colors.primary }]}>
+            <Text style={styles.avatarText}>{initials}</Text>
+          </View>
+        )}
       </View>
     );
   }
 
   return (
     <View style={[styles.row, styles.aiRow]}>
-      <View style={[styles.aiAvatar, { backgroundColor: "#1A0000", borderColor: colors.primary + "40" }]}>
-        <Text style={[styles.aiAvatarText, { color: colors.primary }]}>O</Text>
-      </View>
+      <Image
+        source={require("../assets/images/oplexa-avatar.jpg")}
+        style={styles.aiAvatarImg}
+      />
       <View style={[styles.bubble, styles.aiBubble, { backgroundColor: colors.aiBubble, borderColor: colors.border }]}>
         <Text style={[styles.aiLabel, { color: colors.primary }]}>Oplexa</Text>
         <Text style={[styles.text, { color: colors.foreground }]}>
@@ -91,22 +103,21 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     flexShrink: 0,
   },
+  userAvatarImg: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    flexShrink: 0,
+  },
   avatarText: {
     color: "#FFFFFF",
-    fontSize: 13,
+    fontSize: 11,
     fontFamily: "Inter_700Bold",
   },
-  aiAvatar: {
+  aiAvatarImg: {
     width: 30,
     height: 30,
     borderRadius: 8,
-    alignItems: "center",
-    justifyContent: "center",
     flexShrink: 0,
-    borderWidth: 1,
-  },
-  aiAvatarText: {
-    fontSize: 15,
-    fontFamily: "Inter_700Bold",
   },
 });

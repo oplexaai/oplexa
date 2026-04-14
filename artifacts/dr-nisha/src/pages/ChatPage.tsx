@@ -35,9 +35,9 @@ function UserAvatar({ name }: { name: string }) {
 function OplexaAvatar() {
   return (
     <img
-      src="/oplexa-logo.jpg"
+      src="/oplexa-avatar.jpg"
       alt="Oplexa"
-      style={{ width:"32px",height:"32px",minWidth:"32px",borderRadius:"50%",objectFit:"cover",border:"1px solid var(--border)" }}
+      style={{ width:"32px",height:"32px",minWidth:"32px",borderRadius:"8px",objectFit:"cover",border:"1px solid var(--border)" }}
     />
   );
 }
@@ -177,8 +177,14 @@ export default function ChatPage() {
 
       <div style={{ padding:"12px", borderTop:"1px solid var(--border)" }}>
         <button onClick={() => setLocation("/profile")} style={{ width:"100%",display:"flex",alignItems:"center",gap:"10px",padding:"10px 12px",borderRadius:"9px",background:"var(--surface2)",border:"1px solid var(--border)" }}>
-          <div style={{ width:"32px",height:"32px",background:"var(--accent)",borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"12px",fontWeight:"700",color:"white",flexShrink:0 }}>{userInitials}</div>
-          <span style={{ fontSize:"14px",fontWeight:"500",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{user?.name}</span>
+          {user?.avatarUrl
+            ? <img src={user.avatarUrl} alt="avatar" style={{ width:"32px",height:"32px",borderRadius:"50%",objectFit:"cover",flexShrink:0 }} />
+            : <div style={{ width:"32px",height:"32px",background:"var(--accent)",borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"12px",fontWeight:"700",color:"white",flexShrink:0 }}>{userInitials}</div>
+          }
+          <div style={{ flex:1,textAlign:"left",overflow:"hidden" }}>
+            <div style={{ fontSize:"14px",fontWeight:"600",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{user?.name}</div>
+            <div style={{ fontSize:"11px",color:"var(--text-dim)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{user?.email}</div>
+          </div>
         </button>
       </div>
     </div>
@@ -200,8 +206,11 @@ export default function ChatPage() {
           <span style={{ fontWeight:"600", fontSize:"15px", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", flex:1 }}>
             {activeConv ? activeConv.title : "Oplexa"}
           </span>
-          <button onClick={() => setLocation("/profile")} style={{ width:"36px",height:"36px",background:"var(--accent)",borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"13px",fontWeight:"700",color:"white",flexShrink:0 }}>
-            {userInitials}
+          <button onClick={() => setLocation("/profile")} style={{ width:"36px",height:"36px",background:"var(--accent)",borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"13px",fontWeight:"700",color:"white",flexShrink:0,overflow:"hidden",padding:0,border:"none" }}>
+            {user?.avatarUrl
+              ? <img src={user.avatarUrl} alt="avatar" style={{ width:"36px",height:"36px",objectFit:"cover" }} />
+              : userInitials
+            }
           </button>
         </div>
 

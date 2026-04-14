@@ -118,11 +118,18 @@ export function ConversationDrawer({ visible, onClose, onNewChat }: Props) {
 
         <View style={[styles.footer, { borderTopColor: colors.border }]}>
           <View style={[styles.userRow, { backgroundColor: colors.secondary }]}>
-            <View style={[styles.userAvatar, { backgroundColor: colors.primary }]}>
-              <Text style={styles.userAvatarText}>
-                {user?.name.charAt(0).toUpperCase() || "?"}
-              </Text>
-            </View>
+            {user?.avatarUrl ? (
+              <Image
+                source={{ uri: user.avatarUrl }}
+                style={[styles.userAvatar, { borderRadius: 16 }]}
+              />
+            ) : (
+              <View style={[styles.userAvatar, { backgroundColor: colors.primary }]}>
+                <Text style={styles.userAvatarText}>
+                  {(user?.name || "?").split(" ").map(w => w[0]).slice(0, 2).join("").toUpperCase()}
+                </Text>
+              </View>
+            )}
             <View style={styles.userInfo}>
               <Text style={[styles.userName, { color: colors.foreground }]} numberOfLines={1}>
                 {user?.name || "Guest"}
