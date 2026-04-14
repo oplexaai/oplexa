@@ -145,7 +145,7 @@ log "API server built"
 # ── 8. Build Web app ──────────────────────────────────────────
 log "Building web app..."
 cd ${DEPLOY_DIR}
-VITE_API_URL=https://${DOMAIN} pnpm --filter @workspace/dr-nisha run build
+PORT=3000 BASE_PATH=/ NODE_ENV=production pnpm --filter @workspace/dr-nisha run build
 log "Web app built"
 
 # ── 9. PM2 — start/restart API ───────────────────────────────
