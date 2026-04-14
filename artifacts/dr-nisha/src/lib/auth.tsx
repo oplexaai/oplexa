@@ -9,8 +9,9 @@ export interface User {
   email: string;
   phone?: string;
   bio?: string;
-  avatar_url?: string;
+  avatarUrl?: string;
   created_at?: string;
+  createdAt?: number;
 }
 
 interface AuthContextValue {

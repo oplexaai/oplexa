@@ -7,6 +7,7 @@ import {
   Alert,
   Image,
   KeyboardAvoidingView,
+  Linking,
   Modal,
   Platform,
   Pressable,
@@ -260,10 +261,14 @@ export default function ProfileScreen() {
       mediaTypes: ["images"],
       allowsEditing: true,
       aspect: [1, 1],
-      quality: 0.8,
+      quality: 0.5,
+      base64: true,
     });
     if (!result.canceled && result.assets[0]) {
-      await updateProfile({ avatarUrl: result.assets[0].uri });
+      const asset = result.assets[0];
+      const mimeType = asset.mimeType || "image/jpeg";
+      const dataUrl = `data:${mimeType};base64,${asset.base64}`;
+      await updateProfile({ avatarUrl: dataUrl });
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     }
   };
@@ -405,6 +410,52 @@ export default function ProfileScreen() {
           <Feather name="log-out" size={17} color={colors.destructive} />
           <Text style={[styles.signOutText, { color: colors.destructive }]}>Sign Out</Text>
         </TouchableOpacity>
+
+        <SectionHeader title="ABOUT" />
+        <View style={[styles.section, { borderColor: colors.border }]}>
+          <RowItem icon="info" label="About Oplexa" value="AI Assistant v1.1" chevron={false} />
+          <RowItem
+            icon="mail"
+            label="Contact Us"
+            value="contact@oplexa.in"
+            onPress={() => Linking.openURL("mailto:contact@oplexa.in")}
+          />
+          <RowItem
+            icon="globe"
+            label="Website"
+            value="oplexa.in"
+            onPress={() => Linking.openURL("https://oplexa.in")}
+          />
+        </View>
+
+        <SectionHeader title="FOLLOW US" />
+        <View style={[styles.section, { borderColor: colors.border }]}>
+          {[
+            { icon: "facebook", label: "Facebook", url: "https://facebook.com/oplexaai" },
+            { icon: "instagram", label: "Instagram", url: "https://instagram.com/oplexaai" },
+            { icon: "twitter", label: "Twitter / X", url: "https://twitter.com/oplexaai" },
+            { icon: "youtube", label: "YouTube", url: "https://youtube.com/@oplexaai" },
+            { icon: "linkedin", label: "LinkedIn", url: "https://linkedin.com/company/oplexaai" },
+          ].map(({ icon, label, url }) => (
+            <RowItem
+              key={icon}
+              icon={icon as any}
+              label={label}
+              value={`/oplexaai`}
+              onPress={() => Linking.openURL(url)}
+            />
+          ))}
+        </View>
+
+        <View style={styles.footerCredit}>
+          <Text style={[styles.footerText, { color: colors.mutedForeground }]}>
+            Designed & Developed by
+          </Text>
+          <Text style={[styles.footerBrand, { color: colors.primary }]}>Niskutech</Text>
+          <Text style={[styles.footerVersion, { color: colors.mutedForeground }]}>
+            Oplexa v1.1 • © 2025 Niskutech
+          </Text>
+        </View>
       </ScrollView>
 
       {editField && (
@@ -566,10 +617,30 @@ const styles = StyleSheet.create({
     paddingVertical: 15,
     borderRadius: 14,
     borderWidth: 1.5,
+    marginBottom: 24,
   },
   signOutText: {
     fontSize: 16,
     fontFamily: "Inter_600SemiBold",
+  },
+  footerCredit: {
+    alignItems: "center",
+    paddingVertical: 28,
+    gap: 4,
+  },
+  footerText: {
+    fontSize: 12,
+    fontFamily: "Inter_400Regular",
+  },
+  footerBrand: {
+    fontSize: 16,
+    fontFamily: "Inter_700Bold",
+    letterSpacing: -0.3,
+  },
+  footerVersion: {
+    fontSize: 11,
+    fontFamily: "Inter_400Regular",
+    marginTop: 4,
   },
 
   modalOverlay: {
