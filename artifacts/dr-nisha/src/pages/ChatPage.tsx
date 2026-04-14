@@ -236,11 +236,11 @@ export default function ChatPage() {
         conv.messages,
         chunk => { full += chunk; scheduleFlush(); },
         ctrl.signal,
-        errMsg => { full = errMsg; scheduleFlush(); }
+        () => { full = "⚠️ Server is temporarily down. Please try again later."; scheduleFlush(); }
       );
     } catch (err) {
       if ((err as Error)?.name !== "AbortError") {
-        full = `Sorry, something went wrong: ${(err as Error)?.message || "Unknown error"}. Please try again.`;
+        full = "⚠️ We are on maintenance. Please try again later.";
       }
     }
 

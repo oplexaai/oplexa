@@ -122,7 +122,7 @@ export default function ChatScreen() {
           const errMsg: Message = {
             id: generateMessageId(),
             role: "assistant",
-            content: `Error: ${err.message}`,
+            content: "⚠️ Server is temporarily down. Please try again later.",
             createdAt: Date.now(),
           };
           setMessages((prev) => [...prev, errMsg]);

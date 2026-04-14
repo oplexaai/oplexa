@@ -95,7 +95,7 @@ router.post("/chat", async (req, res) => {
     send("[DONE]");
     res.end();
   } catch (err: any) {
-    send(JSON.stringify({ error: err?.message || "Unknown error" }));
+    send(JSON.stringify({ error: "Server is temporarily down. Please try again later." }));
     res.end();
   }
 });
@@ -107,7 +107,7 @@ async function streamWithGroq(
   send: (data: string) => void,
   withVision = false
 ) {
-  const model = withVision ? "llama-3.2-11b-vision-preview" : "llama-3.3-70b-versatile";
+  const model = withVision ? "meta-llama/llama-4-scout-17b-16e-instruct" : "llama-3.3-70b-versatile";
   const builtMessages = withVision ? buildGroqMessages(messages, systemPrompt) : [{ role: "system", content: systemPrompt }, ...messages];
   const groqRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
     method: "POST",
@@ -125,8 +125,7 @@ async function streamWithGroq(
   });
 
   if (!groqRes.ok) {
-    const errText = await groqRes.text();
-    throw new Error(`Groq error ${groqRes.status}: ${errText}`);
+    throw new Error("AI service temporarily unavailable. Please try again later.");
   }
 
   const reader = groqRes.body?.getReader();
