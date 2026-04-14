@@ -5,6 +5,10 @@ export interface User {
   id: string;
   name: string;
   email: string;
+  phone?: string;
+  bio?: string;
+  avatarUrl?: string;
+  createdAt: number;
 }
 
 interface AuthContextType {
@@ -13,6 +17,8 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   register: (name: string, email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<void>;
+  updateProfile: (updates: Partial<Pick<User, "name" | "phone" | "bio" | "avatarUrl">>) => Promise<{ success: boolean; error?: string }>;
+  changePassword: (currentPassword: string, newPassword: string) => Promise<{ success: boolean; error?: string }>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -24,7 +30,11 @@ interface StoredUser {
   id: string;
   name: string;
   email: string;
+  phone?: string;
+  bio?: string;
+  avatarUrl?: string;
   passwordHash: string;
+  createdAt: number;
 }
 
 function simpleHash(str: string): string {
@@ -35,6 +45,18 @@ function simpleHash(str: string): string {
     hash = hash & hash;
   }
   return Math.abs(hash).toString(36);
+}
+
+function toPublicUser(u: StoredUser): User {
+  return {
+    id: u.id,
+    name: u.name,
+    email: u.email,
+    phone: u.phone,
+    bio: u.bio,
+    avatarUrl: u.avatarUrl,
+    createdAt: u.createdAt,
+  };
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -84,12 +106,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       name: name.trim(),
       email: email.toLowerCase().trim(),
       passwordHash: simpleHash(password + email.toLowerCase()),
+      createdAt: Date.now(),
     };
 
     users.push(newUser);
     await saveUsers(users);
 
-    const publicUser: User = { id: newUser.id, name: newUser.name, email: newUser.email };
+    const publicUser = toPublicUser(newUser);
     await AsyncStorage.setItem(CURRENT_USER_KEY, JSON.stringify(publicUser));
     setUser(publicUser);
     return { success: true };
@@ -111,7 +134,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return { success: false, error: "Invalid email or password" };
     }
 
-    const publicUser: User = { id: found.id, name: found.name, email: found.email };
+    const publicUser = toPublicUser(found);
     await AsyncStorage.setItem(CURRENT_USER_KEY, JSON.stringify(publicUser));
     setUser(publicUser);
     return { success: true };
@@ -122,8 +145,49 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(null);
   }, []);
 
+  const updateProfile = useCallback(async (updates: Partial<Pick<User, "name" | "phone" | "bio" | "avatarUrl">>) => {
+    if (!user) return { success: false, error: "Not logged in" };
+
+    const users = await getUsers();
+    const idx = users.findIndex((u) => u.id === user.id);
+    if (idx === -1) return { success: false, error: "User not found" };
+
+    if (updates.name !== undefined) {
+      if (!updates.name.trim()) return { success: false, error: "Name cannot be empty" };
+      users[idx].name = updates.name.trim();
+    }
+    if (updates.phone !== undefined) users[idx].phone = updates.phone;
+    if (updates.bio !== undefined) users[idx].bio = updates.bio;
+    if (updates.avatarUrl !== undefined) users[idx].avatarUrl = updates.avatarUrl;
+
+    await saveUsers(users);
+    const updated = toPublicUser(users[idx]);
+    await AsyncStorage.setItem(CURRENT_USER_KEY, JSON.stringify(updated));
+    setUser(updated);
+    return { success: true };
+  }, [user]);
+
+  const changePassword = useCallback(async (currentPassword: string, newPassword: string) => {
+    if (!user) return { success: false, error: "Not logged in" };
+    if (!currentPassword || !newPassword) return { success: false, error: "Both fields required" };
+    if (newPassword.length < 6) return { success: false, error: "New password must be at least 6 characters" };
+
+    const users = await getUsers();
+    const idx = users.findIndex((u) => u.id === user.id);
+    if (idx === -1) return { success: false, error: "User not found" };
+
+    const expectedHash = simpleHash(currentPassword + user.email.toLowerCase());
+    if (users[idx].passwordHash !== expectedHash) {
+      return { success: false, error: "Current password is incorrect" };
+    }
+
+    users[idx].passwordHash = simpleHash(newPassword + user.email.toLowerCase());
+    await saveUsers(users);
+    return { success: true };
+  }, [user]);
+
   return (
-    <AuthContext.Provider value={{ user, isLoading, login, register, logout }}>
+    <AuthContext.Provider value={{ user, isLoading, login, register, logout, updateProfile, changePassword }}>
       {children}
     </AuthContext.Provider>
   );

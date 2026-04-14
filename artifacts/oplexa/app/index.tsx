@@ -2,12 +2,15 @@ import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { router } from "expo-router";
 import React, { useCallback, useEffect, useRef, useState } from "react";
+
 import {
   FlatList,
+  Image,
   Platform,
   Pressable,
   StyleSheet,
   Text,
+  TouchableOpacity,
   View,
 } from "react-native";
 import { KeyboardAvoidingView } from "react-native-keyboard-controller";
@@ -152,10 +155,27 @@ export default function ChatScreen() {
         <Pressable onPress={() => setDrawerOpen(true)} style={styles.headerBtn} testID="menu-button">
           <Feather name="menu" size={22} color={colors.foreground} />
         </Pressable>
-        <Text style={[styles.headerTitle, { color: colors.primary }]}>Oplexa</Text>
-        <Pressable onPress={handleNewChat} style={styles.headerBtn} testID="new-chat-button">
-          <Feather name="edit-2" size={20} color={colors.foreground} />
+        <Pressable onPress={handleNewChat} style={styles.headerTitleArea} testID="new-chat-button">
+          <Text style={[styles.headerTitle, { color: colors.primary }]}>Oplexa</Text>
         </Pressable>
+        <TouchableOpacity
+          onPress={() => router.push("/profile")}
+          style={styles.headerBtn}
+          testID="profile-button"
+        >
+          {user?.avatarUrl ? (
+            <Image
+              source={{ uri: user.avatarUrl }}
+              style={styles.headerAvatar}
+            />
+          ) : (
+            <View style={[styles.headerInitials, { backgroundColor: colors.primary }]}>
+              <Text style={styles.headerInitialsText}>
+                {(user?.name || "U").split(" ").map((w) => w[0]).slice(0, 2).join("").toUpperCase()}
+              </Text>
+            </View>
+          )}
+        </TouchableOpacity>
       </View>
 
       <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding" keyboardVerticalOffset={0}>
@@ -204,17 +224,38 @@ const styles = StyleSheet.create({
     paddingBottom: 12,
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
+  headerTitleArea: {
+    flex: 1,
+    alignItems: "center",
+  },
   headerTitle: {
     fontSize: 18,
     fontFamily: "Inter_700Bold",
     letterSpacing: -0.3,
   },
   headerBtn: {
-    width: 40,
-    height: 40,
+    width: 44,
+    height: 44,
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 12,
+  },
+  headerAvatar: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+  },
+  headerInitials: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  headerInitialsText: {
+    color: "#fff",
+    fontSize: 13,
+    fontFamily: "Inter_700Bold",
   },
   listContent: {
     paddingVertical: 8,
