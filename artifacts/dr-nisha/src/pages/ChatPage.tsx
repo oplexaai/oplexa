@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { useLocation } from "wouter";
 import { useAuth } from "../lib/auth";
 import { streamChat, ChatMessage } from "../lib/api";
+import ReactMarkdown from "react-markdown";
 
 interface Conversation {
   id: string;
@@ -227,13 +228,20 @@ export default function ChatPage() {
             <div key={i} className="fade-up" style={{ display:"flex", gap:"12px", flexDirection:msg.role==="user"?"row-reverse":"row", alignItems:"flex-start" }}>
               {msg.role === "user" ? <UserAvatar name={user?.name ?? "U"} /> : <OplexaAvatar />}
               <div style={{
-                maxWidth:"75%", padding:"12px 16px",
+                maxWidth:"78%", padding: msg.role==="user" ? "10px 16px" : "14px 18px",
                 borderRadius: msg.role==="user" ? "18px 4px 18px 18px" : "4px 18px 18px 18px",
                 background: msg.role==="user" ? "var(--accent)" : "var(--surface2)",
                 border: msg.role==="assistant" ? "1px solid var(--border)" : "none",
-                fontSize:"15px", lineHeight:"1.6", whiteSpace:"pre-wrap", wordBreak:"break-word",
               }}>
-                {msg.content}
+                {msg.role === "user" ? (
+                  <span style={{ fontSize:"15px", lineHeight:"1.6", whiteSpace:"pre-wrap", wordBreak:"break-word" }}>
+                    {msg.content}
+                  </span>
+                ) : (
+                  <div className="md-content">
+                    <ReactMarkdown>{msg.content}</ReactMarkdown>
+                  </div>
+                )}
               </div>
             </div>
           ))}
@@ -241,9 +249,12 @@ export default function ChatPage() {
           {streaming && (
             <div className="fade-up" style={{ display:"flex", gap:"12px", alignItems:"flex-start" }}>
               <OplexaAvatar />
-              <div style={{ maxWidth:"75%",padding:"12px 16px",borderRadius:"4px 18px 18px 18px",background:"var(--surface2)",border:"1px solid var(--border)",fontSize:"15px",lineHeight:"1.6",whiteSpace:"pre-wrap",wordBreak:"break-word" }}>
+              <div style={{ maxWidth:"78%",padding:"14px 18px",borderRadius:"4px 18px 18px 18px",background:"var(--surface2)",border:"1px solid var(--border)" }}>
                 {streamText
-                  ? <>{streamText}<span className="cursor" /></>
+                  ? <div className="md-content">
+                      <ReactMarkdown>{streamText}</ReactMarkdown>
+                      <span className="cursor" />
+                    </div>
                   : <div style={{ display:"flex",gap:"5px",alignItems:"center",padding:"4px 0" }}>
                       {[0,1,2].map(i => <div key={i} style={{ width:"7px",height:"7px",borderRadius:"50%",background:"var(--text-dim)",animation:`blink 1.2s ${i*0.3}s infinite` }} />)}
                     </div>
