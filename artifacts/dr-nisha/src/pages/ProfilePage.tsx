@@ -224,7 +224,7 @@ export default function ProfilePage() {
           <div style={{ textAlign:"center",paddingTop:"32px",paddingBottom:"8px" }}>
             <p style={{ fontSize:"12px",color:"var(--text-muted)" }}>Designed & Developed by</p>
             <p style={{ fontSize:"16px",fontWeight:"700",color:"var(--accent)",marginTop:"4px" }}>Niskutech</p>
-            <p style={{ fontSize:"11px",color:"var(--text-dim)",marginTop:"4px" }}>Oplexa v1.1 • © 2025 Niskutech. All rights reserved.</p>
+            <p style={{ fontSize:"11px",color:"var(--text-dim)",marginTop:"4px" }}>Oplexa v1.1 • © 2026 Niskutech. All rights reserved.</p>
           </div>
 
         </div>

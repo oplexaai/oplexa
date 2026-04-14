@@ -49,10 +49,15 @@ function saveConversations(convs: Conversation[]) {
   localStorage.setItem("oplexa_convs", JSON.stringify(convs));
 }
 
-function UserAvatar({ name }: { name: string }) {
+function UserAvatar({ name, avatarUrl }: { name: string; avatarUrl?: string | null }) {
   const initials = name.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase();
+  if (avatarUrl) {
+    return (
+      <img src={avatarUrl} alt={name} style={{ width:"32px",height:"32px",minWidth:"32px",borderRadius:"50%",objectFit:"cover",border:"2px solid var(--accent)",flexShrink:0 }} />
+    );
+  }
   return (
-    <div style={{ width:"32px",height:"32px",minWidth:"32px",background:"var(--accent)",borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"12px",fontWeight:"700",color:"white" }}>
+    <div style={{ width:"32px",height:"32px",minWidth:"32px",background:"var(--accent)",borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"12px",fontWeight:"700",color:"white",flexShrink:0 }}>
       {initials}
     </div>
   );
@@ -369,7 +374,7 @@ export default function ChatPage() {
 
           {displayMessages.map((msg, i) => (
             <div key={i} className="fade-up" style={{ display:"flex", gap:"12px", flexDirection:msg.role==="user"?"row-reverse":"row", alignItems:"flex-start" }}>
-              {msg.role === "user" ? <UserAvatar name={user?.name ?? "U"} /> : <OplexaAvatar />}
+              {msg.role === "user" ? <UserAvatar name={user?.name ?? "U"} avatarUrl={user?.avatarUrl} /> : <OplexaAvatar />}
               <div style={{
                 maxWidth:"78%", padding: msg.role==="user" ? "10px 16px" : "14px 18px",
                 borderRadius: msg.role==="user" ? "18px 4px 18px 18px" : "4px 18px 18px 18px",
@@ -437,7 +442,7 @@ export default function ChatPage() {
               {streaming ? "⬛" : "↑"}
             </button>
           </div>
-          <p style={{ textAlign:"center",fontSize:"11px",color:"var(--accent)",marginTop:"8px",fontWeight:"600",letterSpacing:"0.02em" }}>
+          <p style={{ textAlign:"center",fontSize:"11px",color:"var(--accent)",marginTop:"8px",fontWeight:"600",letterSpacing:"0.02em",width:"100%",display:"block" }}>
             India's No.1 First AI — Oplexa
           </p>
         </div>
