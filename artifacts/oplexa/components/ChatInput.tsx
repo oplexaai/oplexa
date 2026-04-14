@@ -45,8 +45,9 @@ export function ChatInput({ onSend, disabled }: Props) {
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ["images"],
       allowsEditing: false,
-      quality: 0.7,
+      quality: 0.4,
       base64: true,
+      exif: false,
     });
     if (!result.canceled && result.assets[0]) {
       const asset = result.assets[0];

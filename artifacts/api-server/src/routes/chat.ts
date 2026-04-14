@@ -100,6 +100,15 @@ router.post("/chat", async (req, res) => {
   }
 });
 
+function stripImages(messages: ApiMessage[]): ApiMessage[] {
+  return messages.map(m => {
+    if (!Array.isArray(m.content)) return m;
+    const parts = m.content as ContentPart[];
+    const textPart = parts.find(p => p.type === "text") as { type: "text"; text: string } | undefined;
+    return { role: m.role, content: textPart?.text || "(image sent)" };
+  });
+}
+
 async function streamWithGroq(
   apiKey: string,
   messages: ApiMessage[],
@@ -125,6 +134,10 @@ async function streamWithGroq(
   });
 
   if (!groqRes.ok) {
+    if (withVision) {
+      await streamWithGroq(apiKey, stripImages(messages), systemPrompt, send, false);
+      return;
+    }
     throw new Error("AI service temporarily unavailable. Please try again later.");
   }
 

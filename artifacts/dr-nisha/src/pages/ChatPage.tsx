@@ -484,7 +484,23 @@ export default function ChatPage() {
               const file = e.target.files?.[0];
               if (!file) return;
               const reader = new FileReader();
-              reader.onload = ev => setPendingImage(ev.target?.result as string);
+              reader.onload = ev => {
+                const raw = ev.target?.result as string;
+                const img = new Image();
+                img.onload = () => {
+                  const MAX = 800;
+                  let w = img.width, h = img.height;
+                  if (w > MAX || h > MAX) {
+                    if (w > h) { h = Math.round(h * MAX / w); w = MAX; }
+                    else { w = Math.round(w * MAX / h); h = MAX; }
+                  }
+                  const canvas = document.createElement("canvas");
+                  canvas.width = w; canvas.height = h;
+                  canvas.getContext("2d")?.drawImage(img, 0, 0, w, h);
+                  setPendingImage(canvas.toDataURL("image/jpeg", 0.65));
+                };
+                img.src = raw;
+              };
               reader.readAsDataURL(file);
               e.target.value = "";
             }}
