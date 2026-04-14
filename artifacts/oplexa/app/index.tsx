@@ -157,7 +157,11 @@ export default function ChatScreen() {
           <Feather name="menu" size={22} color={colors.foreground} />
         </Pressable>
         <Pressable onPress={handleNewChat} style={styles.headerTitleArea} testID="new-chat-button">
-          <Text style={[styles.headerTitle, { color: colors.primary }]}>Oplexa</Text>
+          <Image
+            source={require("../assets/images/oplexa-logo-text.png")}
+            style={styles.headerLogoImg}
+            resizeMode="contain"
+          />
         </Pressable>
         <TouchableOpacity
           onPress={() => router.push("/profile")}
@@ -233,6 +237,10 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontFamily: "Inter_700Bold",
     letterSpacing: -0.3,
+  },
+  headerLogoImg: {
+    height: 28,
+    width: 140,
   },
   headerBtn: {
     width: 44,

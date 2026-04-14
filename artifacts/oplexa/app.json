@@ -9,7 +9,7 @@
     "userInterfaceStyle": "dark",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/images/oplexa-logo.jpg",
+      "image": "./assets/images/oplexa-logo-text.png",
       "resizeMode": "contain",
       "backgroundColor": "#000000"
     },

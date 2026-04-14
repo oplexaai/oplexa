@@ -150,9 +150,8 @@ export default function ChatPage() {
       ...(isMobile ? { position:"fixed",left:sidebarOpen?"0":"-260px",top:0,bottom:0,zIndex:30,transition:"left 0.25s ease" } : {}),
     }}>
       <div style={{ padding:"16px", borderBottom:"1px solid var(--border)" }}>
-        <div style={{ display:"flex", alignItems:"center", gap:"10px", marginBottom:"12px" }}>
-          <img src="/oplexa-logo.jpg" alt="Oplexa" style={{ width:"32px",height:"32px",borderRadius:"8px",objectFit:"cover" }} />
-          <span style={{ fontSize:"18px", fontWeight:"700" }}>Oplexa</span>
+        <div style={{ display:"flex", alignItems:"center", marginBottom:"12px" }}>
+          <img src="/oplexa-logo-text.png" alt="Oplexa" style={{ height:"30px", objectFit:"contain" }} />
         </div>
         <button onClick={startNewChat} style={{ width:"100%",padding:"10px 14px",background:"var(--accent-light)",border:"1px solid rgba(220,38,38,0.25)",borderRadius:"9px",color:"var(--accent)",fontSize:"14px",fontWeight:"600",display:"flex",alignItems:"center",gap:"8px" }}>
           <span style={{ fontSize:"18px", lineHeight:1 }}>+</span> New Chat

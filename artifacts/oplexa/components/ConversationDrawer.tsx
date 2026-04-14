@@ -4,6 +4,7 @@ import React from "react";
 import {
   Animated,
   FlatList,
+  Image,
   Platform,
   Pressable,
   StyleSheet,
@@ -58,7 +59,11 @@ export function ConversationDrawer({ visible, onClose, onNewChat }: Props) {
         ]}
       >
         <View style={styles.drawerHeader}>
-          <Text style={[styles.brandName, { color: colors.primary }]}>Oplexa</Text>
+          <Image
+            source={require("../assets/images/oplexa-logo-text.png")}
+            style={styles.drawerLogoImg}
+            resizeMode="contain"
+          />
           <Pressable onPress={onNewChat} style={[styles.newBtn, { backgroundColor: colors.secondary }]}>
             <Feather name="edit" size={16} color={colors.foreground} />
           </Pressable>
@@ -155,6 +160,10 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     paddingHorizontal: 16,
     marginBottom: 16,
+  },
+  drawerLogoImg: {
+    height: 32,
+    width: 150,
   },
   brandName: {
     fontSize: 22,
