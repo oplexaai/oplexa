@@ -2,7 +2,11 @@
   "expo": {
     "name": "Oplexa",
     "slug": "oplexa",
+    "owner": "oplexaai",
     "version": "1.0.0",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
     "orientation": "portrait",
     "icon": "./assets/images/oplexa-logo.jpg",
     "scheme": "oplexa",
@@ -15,14 +19,23 @@
     },
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.oplexa.app"
+      "bundleIdentifier": "com.oplexa.app",
+      "buildNumber": "1"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/oplexa-logo.jpg",
         "backgroundColor": "#000000"
       },
-      "package": "com.oplexa.app"
+      "package": "com.oplexa.app",
+      "versionCode": 1,
+      "permissions": [
+        "android.permission.INTERNET",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.CAMERA",
+        "android.permission.VIBRATE"
+      ]
     },
     "web": {
       "favicon": "./assets/images/oplexa-logo.jpg",
@@ -36,11 +49,38 @@
         }
       ],
       "expo-font",
-      "expo-web-browser"
+      "expo-web-browser",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow Oplexa to access your photos to set a profile picture.",
+          "cameraPermission": "Allow Oplexa to use your camera."
+        }
+      ],
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#000000",
+          "image": "./assets/images/oplexa-logo-text.png",
+          "resizeMode": "contain",
+          "dark": {
+            "backgroundColor": "#000000",
+            "image": "./assets/images/oplexa-logo-text.png"
+          }
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "eas": {
+        "projectId": "4a77dcc0-b536-4dec-a4f7-75e065ad0f2f"
+      }
+    },
+    "updates": {
+      "url": "https://u.expo.dev/4a77dcc0-b536-4dec-a4f7-75e065ad0f2f"
     }
   }
 }
