@@ -16,12 +16,28 @@ pnpm workspace monorepo using TypeScript. Each package manages its own dependenc
 - **API codegen**: Orval (from OpenAPI spec)
 - **Build**: esbuild (CJS bundle)
 
+## Projects
+
+### Oplexa AI Assistant
+- **Mobile App**: `artifacts/oplexa/` — Expo React Native app (iOS/Android)
+- **API Server**: `artifacts/api-server/` — Express API with Groq + Gemini AI streaming
+- **Theme**: Black (#000000) and Red (#DC2626)
+- **AI**: Groq (llama-3.3-70b-versatile) via `GROQ_API_KEY`, falls back to Gemini integration
+- **Auth**: Local email/password auth with AsyncStorage
+- **Deploy target**: oplexa.in on AWS EC2
+
+### Dr. Nisha (Legacy → Oplexa)
+- **Web app**: `dr-nisha-nextjs/` — Next.js web version (being migrated to oplexa.in)
+- **EC2**: SSH `ubuntu@13.204.53.195`, app at `/home/ubuntu/dr-nisha`
+- **Deploy script**: `deploy_oplexa.py` (base64-encoded file deploy via Python)
+
 ## Structure
 
 ```text
 artifacts-monorepo/
 ├── artifacts/              # Deployable applications
-│   └── api-server/         # Express API server
+│   ├── api-server/         # Express API server (Groq/Gemini chat)
+│   └── oplexa/             # Expo mobile app
 ├── lib/                    # Shared libraries
 │   ├── api-spec/           # OpenAPI spec + Orval codegen config
 │   ├── api-client-react/   # Generated React Query hooks

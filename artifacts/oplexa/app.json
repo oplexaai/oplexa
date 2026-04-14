@@ -1,0 +1,46 @@
+{
+  "expo": {
+    "name": "Oplexa",
+    "slug": "oplexa",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/icon.png",
+    "scheme": "oplexa",
+    "userInterfaceStyle": "dark",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/images/icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#000000"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.oplexa.app"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/icon.png",
+        "backgroundColor": "#000000"
+      },
+      "package": "com.oplexa.app"
+    },
+    "web": {
+      "favicon": "./assets/images/icon.png",
+      "backgroundColor": "#000000"
+    },
+    "plugins": [
+      [
+        "expo-router",
+        {
+          "origin": "https://replit.com/"
+        }
+      ],
+      "expo-font",
+      "expo-web-browser"
+    ],
+    "experiments": {
+      "typedRoutes": true,
+      "reactCompiler": true
+    }
+  }
+}
