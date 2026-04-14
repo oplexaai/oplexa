@@ -4,6 +4,30 @@ import { useAuth } from "../lib/auth";
 import { streamChat, ChatMessage } from "../lib/api";
 import ReactMarkdown from "react-markdown";
 
+function CodeBlock({ inline, className, children }: { inline?: boolean; className?: string; children?: React.ReactNode }) {
+  const [copied, setCopied] = useState(false);
+  const code = String(children).replace(/\n$/, "");
+  if (inline) return <code style={{ background:"rgba(255,255,255,0.08)",border:"1px solid var(--border)",borderRadius:"5px",padding:"1px 6px",fontFamily:"'Fira Mono','Consolas',monospace",fontSize:"13px",color:"#f87171" }}>{children}</code>;
+  return (
+    <div style={{ position:"relative",margin:"10px 0" }}>
+      <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",background:"#1a1a1a",borderRadius:"10px 10px 0 0",padding:"7px 14px",borderBottom:"1px solid var(--border)" }}>
+        <span style={{ fontSize:"11px",color:"var(--text-dim)",fontFamily:"monospace" }}>{className?.replace("language-","") || "code"}</span>
+        <button
+          onClick={() => { navigator.clipboard.writeText(code).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2000); }); }}
+          style={{ fontSize:"11px",fontWeight:"600",color:copied?"#4ade80":"var(--text-muted)",background:"rgba(255,255,255,0.06)",border:"1px solid var(--border)",borderRadius:"6px",padding:"3px 10px",cursor:"pointer",transition:"all 0.15s" }}
+        >
+          {copied ? "✓ Copied!" : "Copy"}
+        </button>
+      </div>
+      <pre style={{ background:"#0d0d0d",border:"1px solid var(--border)",borderRadius:"0 0 10px 10px",padding:"14px 16px",overflowX:"auto",margin:0,borderTop:"none" }}>
+        <code style={{ fontFamily:"'Fira Mono','Consolas',monospace",fontSize:"13px",color:"#e5e5e5" }}>{code}</code>
+      </pre>
+    </div>
+  );
+}
+
+const MD_COMPONENTS = { code: CodeBlock };
+
 interface Conversation {
   id: string;
   title: string;
@@ -161,20 +185,37 @@ export default function ChatPage() {
     const ctrl = new AbortController();
     abortRef.current = ctrl;
     let full = "";
+    let rafId: number | null = null;
+    let pendingText = "";
+
+    const flushText = () => {
+      if (pendingText !== full) {
+        pendingText = full;
+        setStreamText(full);
+      }
+      rafId = null;
+    };
+
+    const scheduleFlush = () => {
+      if (!rafId) rafId = requestAnimationFrame(flushText);
+    };
 
     try {
       const conv = updatedWithUser.find(c => c.id === convId)!;
       await streamChat(
         conv.messages,
-        chunk => { full += chunk; setStreamText(full); },
+        chunk => { full += chunk; scheduleFlush(); },
         ctrl.signal,
-        errMsg => { full = errMsg; setStreamText(errMsg); }
+        errMsg => { full = errMsg; scheduleFlush(); }
       );
     } catch (err) {
       if ((err as Error)?.name !== "AbortError") {
         full = `Sorry, something went wrong: ${(err as Error)?.message || "Unknown error"}. Please try again.`;
       }
     }
+
+    if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
+    setStreamText(full);
 
     const aiMsg: ChatMessage = { role: "assistant", content: full || "No response received. Please try again." };
     const finalConvs = updatedWithUser.map(c =>
@@ -341,7 +382,7 @@ export default function ChatPage() {
                   </span>
                 ) : (
                   <div className="md-content">
-                    <ReactMarkdown>{msg.content}</ReactMarkdown>
+                    <ReactMarkdown components={MD_COMPONENTS}>{msg.content}</ReactMarkdown>
                   </div>
                 )}
               </div>
@@ -354,7 +395,7 @@ export default function ChatPage() {
               <div style={{ maxWidth:"78%",padding:"14px 18px",borderRadius:"4px 18px 18px 18px",background:"var(--surface2)",border:"1px solid var(--border)" }}>
                 {streamText
                   ? <div className="md-content">
-                      <ReactMarkdown>{streamText}</ReactMarkdown>
+                      <ReactMarkdown components={MD_COMPONENTS}>{streamText}</ReactMarkdown>
                       <span className="cursor" />
                     </div>
                   : <div style={{ display:"flex",gap:"5px",alignItems:"center",padding:"4px 0" }}>

@@ -109,6 +109,7 @@ export default function ProfilePage() {
 
   const initials = user?.name.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase() ?? "U";
   const memberYear = user?.createdAt ? new Date(user.createdAt).getFullYear() : new Date().getFullYear();
+  const chatCount = (() => { try { return JSON.parse(localStorage.getItem("oplexa_convs") || "[]").length; } catch { return 0; } })();
 
   async function handleAvatarChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]; if (!file) return;
@@ -174,7 +175,7 @@ export default function ProfilePage() {
           </div>
 
           <div style={{ display:"flex",borderRadius:"16px",border:"1px solid var(--border)",overflow:"hidden",background:"var(--surface)",marginBottom:"8px" }}>
-            {[["Oplexa 1.1","AI"],["–","Chats"],[String(memberYear),"Member"]].map(([val,lbl],i,arr) => (
+            {[["Oplexa 1.1","AI"],[String(chatCount),"Chats"],[String(memberYear),"Member"]].map(([val,lbl],i,arr) => (
               <div key={lbl} style={{ flex:1,textAlign:"center",padding:"14px 8px",borderRight:i<arr.length-1?"1px solid var(--border)":"none" }}>
                 <p style={{ fontSize:"15px",fontWeight:"700",color:lbl==="AI"?"var(--accent)":"var(--text)" }}>{val}</p>
                 <p style={{ fontSize:"11px",color:"var(--text-muted)",marginTop:"2px",textTransform:"uppercase",letterSpacing:"0.5px" }}>{lbl}</p>
