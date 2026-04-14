@@ -452,7 +452,7 @@ export default function ProfileScreen() {
           </Text>
           <Text style={[styles.footerBrand, { color: colors.primary }]}>Niskutech</Text>
           <Text style={[styles.footerVersion, { color: colors.mutedForeground }]}>
-            Oplexa v1.1 • © 2025 Niskutech
+            Oplexa v1.1 • © 2026 Niskutech
           </Text>
         </View>
       </ScrollView>
