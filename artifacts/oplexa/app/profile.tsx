@@ -441,7 +441,6 @@ export default function ProfileScreen() {
               key={icon}
               icon={icon as any}
               label={label}
-              value={`/oplexaai`}
               onPress={() => Linking.openURL(url)}
             />
           ))}

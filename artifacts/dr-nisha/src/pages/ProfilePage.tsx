@@ -3,11 +3,11 @@ import { useLocation } from "wouter";
 import { useAuth, getToken } from "../lib/auth";
 
 const SOCIAL = [
-  { icon: "𝐟", label: "Facebook", url: "https://facebook.com/oplexaai", handle: "/oplexaai" },
-  { icon: "📸", label: "Instagram", url: "https://instagram.com/oplexaai", handle: "/oplexaai" },
-  { icon: "𝕏", label: "Twitter / X", url: "https://twitter.com/oplexaai", handle: "/oplexaai" },
-  { icon: "▶", label: "YouTube", url: "https://youtube.com/@oplexaai", handle: "@oplexaai" },
-  { icon: "in", label: "LinkedIn", url: "https://linkedin.com/company/oplexaai", handle: "/oplexaai" },
+  { icon: "𝐟", label: "Facebook", url: "https://facebook.com/oplexaai" },
+  { icon: "📸", label: "Instagram", url: "https://instagram.com/oplexaai" },
+  { icon: "𝕏", label: "Twitter / X", url: "https://twitter.com/oplexaai" },
+  { icon: "▶", label: "YouTube", url: "https://youtube.com/@oplexaai" },
+  { icon: "in", label: "LinkedIn", url: "https://linkedin.com/company/oplexaai" },
 ];
 
 export default function ProfilePage() {
@@ -205,11 +205,10 @@ export default function ProfilePage() {
 
         <div style={{ background:"var(--surface)",borderRadius:"16px",border:"1px solid var(--border)",padding:"20px",marginBottom:"20px" }}>
           <p style={{ fontSize:"12px",fontWeight:"700",color:"var(--text-dim)",letterSpacing:"0.8px",textTransform:"uppercase",marginBottom:"14px" }}>Follow Us</p>
-          {SOCIAL.map(({ icon, label, url, handle }) => (
+          {SOCIAL.map(({ icon, label, url }) => (
             <a key={label} href={url} target="_blank" rel="noreferrer" style={{ display:"flex",alignItems:"center",gap:"12px",padding:"10px 0",borderBottom:"1px solid var(--border)",textDecoration:"none",color:"inherit" }}>
               <span style={{ fontSize:"15px",fontWeight:"700",width:"24px",textAlign:"center",color:"var(--accent)" }}>{icon}</span>
               <span style={{ flex:1,fontSize:"14px" }}>{label}</span>
-              <span style={{ fontSize:"13px",color:"var(--text-muted)" }}>{handle}</span>
               <span style={{ color:"var(--text-dim)",fontSize:"12px" }}>→</span>
             </a>
           ))}
