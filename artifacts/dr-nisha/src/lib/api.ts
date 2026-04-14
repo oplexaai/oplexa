@@ -42,7 +42,7 @@ export async function streamChat(
       if (data === "[DONE]") return;
       try {
         const parsed = JSON.parse(data);
-        const text = parsed.choices?.[0]?.delta?.content;
+        const text = parsed.content;
         if (text) onChunk(text);
       } catch {}
     }
