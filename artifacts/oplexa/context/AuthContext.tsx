@@ -29,10 +29,12 @@ const TOKEN_KEY = "oplexa_jwt_token";
 const USER_KEY = "oplexa_user_cache";
 
 function getApiBase(): string {
-  // Web: Metro dev server proxies /api/* to the API server (port 8080)
-  // so we use relative URLs — no cross-origin issues
+  // Production build: EXPO_PUBLIC_API_URL explicitly set (e.g. https://oplexa.in for EC2)
+  const explicitUrl = process.env.EXPO_PUBLIC_API_URL;
+  if (explicitUrl) return explicitUrl.replace(/\/$/, "");
+  // Web dev: Metro dev server proxies /api/* → localhost:8080 (same-origin)
   if (Platform.OS === "web") return "";
-  // Native (Expo Go on phone): use env var domain
+  // Native dev (Expo Go): use EXPO_PUBLIC_DOMAIN
   const domain = process.env.EXPO_PUBLIC_DOMAIN || "";
   if (!domain) return "";
   return `https://${domain}/api-server`;

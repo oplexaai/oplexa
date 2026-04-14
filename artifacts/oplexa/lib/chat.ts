@@ -12,9 +12,12 @@ export function generateMessageId(): string {
 }
 
 export function getApiBase(): string {
-  // Web: Metro dev server proxies /api/* → localhost:8080 (same-origin, no CORS issues)
+  // Production build: EXPO_PUBLIC_API_URL set → e.g. https://oplexa.in (EC2)
+  const explicitUrl = process.env.EXPO_PUBLIC_API_URL;
+  if (explicitUrl) return explicitUrl.replace(/\/$/, "");
+  // Web dev: Metro proxies /api/* → localhost:8080 (same-origin)
   if (Platform.OS === "web") return "";
-  // Native: use env var domain
+  // Native dev: use EXPO_PUBLIC_DOMAIN
   const domain = process.env.EXPO_PUBLIC_DOMAIN || "";
   if (!domain) return "";
   return `https://${domain}/api-server`;
