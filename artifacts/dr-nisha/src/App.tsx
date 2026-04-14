@@ -3,13 +3,14 @@ import { AuthProvider, useAuth } from "./lib/auth";
 import AuthPage from "./pages/AuthPage";
 import ChatPage from "./pages/ChatPage";
 import ProfilePage from "./pages/ProfilePage";
+import WelcomePage from "./pages/WelcomePage";
 
 function AppRoutes() {
   const { user, loading } = useAuth();
 
   if (loading) {
     return (
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100vh", background: "#000" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100dvh", background: "#000" }}>
         <div className="spinner" />
       </div>
     );
@@ -17,14 +18,17 @@ function AppRoutes() {
 
   return (
     <Switch>
+      <Route path="/welcome">
+        {user ? <Redirect to="/" /> : <WelcomePage />}
+      </Route>
       <Route path="/auth">
         {user ? <Redirect to="/" /> : <AuthPage />}
       </Route>
       <Route path="/profile">
-        {!user ? <Redirect to="/auth" /> : <ProfilePage />}
+        {!user ? <Redirect to="/welcome" /> : <ProfilePage />}
       </Route>
       <Route path="/">
-        {!user ? <Redirect to="/auth" /> : <ChatPage />}
+        {!user ? <WelcomePage /> : <ChatPage />}
       </Route>
     </Switch>
   );

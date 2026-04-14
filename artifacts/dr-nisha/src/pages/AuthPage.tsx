@@ -2,7 +2,8 @@ import { useState } from "react";
 import { useAuth } from "../lib/auth";
 
 export default function AuthPage() {
-  const [tab, setTab] = useState<"login" | "register">("login");
+  const initialMode = new URLSearchParams(window.location.search).get("mode") === "register" ? "register" : "login";
+  const [tab, setTab] = useState<"login" | "register">(initialMode);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -32,12 +33,19 @@ export default function AuthPage() {
   return (
     <div style={{
       display: "flex",
+      flexDirection: "column",
       alignItems: "center",
       justifyContent: "center",
-      height: "100vh",
+      height: "100dvh",
       background: "var(--bg)",
       padding: "20px",
     }}>
+      <button
+        onClick={() => window.history.length > 1 ? window.history.back() : (window.location.href = "/")}
+        style={{ position:"absolute", top:"16px", left:"16px", display:"flex", alignItems:"center", gap:"6px", color:"var(--text-muted)", fontSize:"14px", background:"transparent", border:"none", cursor:"pointer", padding:"8px" }}
+      >
+        ← Back
+      </button>
       <div style={{ width: "100%", maxWidth: "400px" }}>
         <div style={{ textAlign: "center", marginBottom: "32px" }}>
           <img
