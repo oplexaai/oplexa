@@ -3,29 +3,29 @@
 @tailwind utilities;
 
 :root {
-  --background: 0 0% 100%;
-  --foreground: 222 47% 11%;
-  --primary: 211 100% 50%;
-  --primary-foreground: 210 40% 98%;
-  --muted: 214 32% 96%;
-  --muted-foreground: 215 16% 47%;
-  --border: 214 32% 91%;
-  --sidebar: 210 40% 98%;
-  --sidebar-foreground: 222 47% 11%;
-  --sidebar-border: 214 32% 91%;
+  --background: 0 0% 6%;
+  --foreground: 0 0% 95%;
+  --primary: 0 84% 55%;
+  --primary-foreground: 0 0% 100%;
+  --muted: 0 0% 11%;
+  --muted-foreground: 0 0% 55%;
+  --border: 0 0% 16%;
+  --sidebar: 0 0% 8%;
+  --sidebar-foreground: 0 0% 92%;
+  --sidebar-border: 0 0% 13%;
 }
 
 .dark {
-  --background: 222 47% 7%;
-  --foreground: 210 40% 95%;
-  --primary: 211 100% 55%;
-  --primary-foreground: 222 47% 5%;
-  --muted: 217 33% 14%;
-  --muted-foreground: 215 20% 55%;
-  --border: 217 33% 18%;
-  --sidebar: 222 47% 9%;
-  --sidebar-foreground: 210 40% 90%;
-  --sidebar-border: 217 33% 16%;
+  --background: 0 0% 5%;
+  --foreground: 0 0% 95%;
+  --primary: 0 84% 55%;
+  --primary-foreground: 0 0% 100%;
+  --muted: 0 0% 10%;
+  --muted-foreground: 0 0% 52%;
+  --border: 0 0% 15%;
+  --sidebar: 0 0% 7%;
+  --sidebar-foreground: 0 0% 90%;
+  --sidebar-border: 0 0% 12%;
 }
 
 @layer base {

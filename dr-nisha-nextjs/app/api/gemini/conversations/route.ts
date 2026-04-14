@@ -21,7 +21,7 @@ export async function GET() {
 
 export async function POST(request: Request) {
   const body = await request.json().catch(() => ({}));
-  const title = body?.title || "New Consultation";
+  const title = body?.title || "New Chat";
 
   if (!isMySQLConfigured()) {
     const conv = fsCreateConversation(title);

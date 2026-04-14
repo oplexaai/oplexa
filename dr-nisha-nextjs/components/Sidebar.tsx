@@ -1,13 +1,18 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, MessageSquare, LogIn, UserPlus, LogOut, X, Trash2 } from "lucide-react";
+import { Plus, MessageSquare, LogIn, UserPlus, LogOut, X, Trash2, Search, Pin, User } from "lucide-react";
 import { LoginModal } from "./LoginModal";
 
 interface Conversation {
   id: number;
   title: string;
   created_at: string;
+}
+
+interface UserInfo {
+  username: string;
+  email: string;
 }
 
 interface Props {
@@ -17,28 +22,22 @@ interface Props {
   onSelect: (id: number) => void;
   onCreateNew: () => void;
   onDelete: (id: number) => void;
-  userName: string | null;
-  onLogin: (name: string) => void;
+  user: UserInfo | null;
+  onLogin: (u: UserInfo) => void;
   onLogout: () => void;
 }
 
-export function Sidebar({
-  isOpen,
-  setIsOpen,
-  activeId,
-  onSelect,
-  onCreateNew,
-  onDelete,
-  userName,
-  onLogin,
-  onLogout,
-}: Props) {
+export function Sidebar({ isOpen, setIsOpen, activeId, onSelect, onCreateNew, onDelete, user, onLogin, onLogout }: Props) {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [modal, setModal] = useState<"login" | "create" | null>(null);
+  const [search, setSearch] = useState("");
+  const [pinned, setPinned] = useState<number[]>(() => {
+    if (typeof window === "undefined") return [];
+    try { return JSON.parse(localStorage.getItem("oplexa_pinned") || "[]"); } catch { return []; }
+  });
+  const [showProfile, setShowProfile] = useState(false);
 
-  useEffect(() => {
-    fetchConversations();
-  }, [activeId]);
+  useEffect(() => { fetchConversations(); }, [activeId]);
 
   const fetchConversations = async () => {
     try {
@@ -51,108 +50,168 @@ export function Sidebar({
     e.stopPropagation();
     await fetch(`/api/gemini/conversations/${id}`, { method: "DELETE" });
     onDelete(id);
+    setPinned((prev) => prev.filter((p) => p !== id));
     fetchConversations();
   };
 
-  const formatDate = (dateStr: string) => {
-    return new Date(dateStr).toLocaleDateString("en-IN", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
+  const togglePin = (e: React.MouseEvent, id: number) => {
+    e.stopPropagation();
+    setPinned((prev) => {
+      const next = prev.includes(id) ? prev.filter((p) => p !== id) : [...prev, id];
+      localStorage.setItem("oplexa_pinned", JSON.stringify(next));
+      return next;
     });
   };
 
+  const formatDate = (dateStr: string) => {
+    return new Date(dateStr).toLocaleDateString("en-IN", { month: "short", day: "numeric", year: "numeric" });
+  };
+
+  const filtered = conversations.filter((c) =>
+    c.title.toLowerCase().includes(search.toLowerCase())
+  );
+  const pinnedConvs = filtered.filter((c) => pinned.includes(c.id));
+  const unpinnedConvs = filtered.filter((c) => !pinned.includes(c.id));
+
+  const ConvItem = ({ conv }: { conv: Conversation }) => (
+    <div
+      key={conv.id}
+      onClick={() => { onSelect(conv.id); setIsOpen(false); }}
+      className={`group flex items-center gap-2 px-3 py-2.5 rounded-xl cursor-pointer transition-colors ${
+        activeId === conv.id
+          ? "bg-red-500/10 border border-red-500/20 text-red-400"
+          : "hover:bg-white/5 text-gray-400 hover:text-white"
+      }`}
+    >
+      <MessageSquare size={13} className="flex-shrink-0 opacity-50" />
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-medium truncate">{conv.title}</p>
+        <p className="text-xs text-gray-700">{formatDate(conv.created_at)}</p>
+      </div>
+      <div className="opacity-0 group-hover:opacity-100 flex items-center gap-0.5">
+        <button onClick={(e) => togglePin(e, conv.id)} className="p-1 rounded hover:bg-white/10 text-gray-600 hover:text-yellow-400">
+          <Pin size={11} className={pinned.includes(conv.id) ? "fill-yellow-400 text-yellow-400" : ""} />
+        </button>
+        <button onClick={(e) => handleDelete(e, conv.id)} className="p-1 rounded hover:bg-white/10 text-gray-600 hover:text-red-400">
+          <Trash2 size={11} />
+        </button>
+      </div>
+    </div>
+  );
+
   const sidebarContent = (
-    <div className="flex flex-col h-full">
-      {/* Header */}
-      <div className="flex items-center gap-3 px-4 py-4 border-b border-sidebar-border">
-        <div className="w-9 h-9 rounded-full overflow-hidden border-2 border-blue-500/20">
-          <img src="/dr-nisha.jpg" alt="Dr. Nisha" className="w-full h-full object-cover" />
+    <div className="flex flex-col h-full bg-[#0d0d0d]">
+      {/* Logo */}
+      <div className="flex items-center gap-3 px-4 py-4 border-b border-white/8">
+        <div className="w-8 h-8 rounded-xl overflow-hidden">
+          <img src="/oplexa-logo.png" alt="Oplexa" className="w-full h-full object-contain bg-black" />
         </div>
-        <div className="flex-1 min-w-0">
-          <p className="font-bold text-sm text-sidebar-foreground truncate">Dr. Nisha</p>
-          <p className="text-xs text-muted-foreground">Medical Assistant</p>
+        <div className="flex-1">
+          <p className="font-bold text-sm text-white">Oplexa</p>
+          <p className="text-xs text-gray-600">AI Assistant</p>
         </div>
         {isOpen && (
-          <button onClick={() => setIsOpen(false)} className="md:hidden p-1.5 rounded-lg hover:bg-muted text-muted-foreground">
+          <button onClick={() => setIsOpen(false)} className="md:hidden p-1.5 rounded-lg hover:bg-white/5 text-gray-600">
             <X size={16} />
           </button>
         )}
       </div>
 
-      {/* Auth buttons */}
-      <div className="px-3 py-3 space-y-1.5 border-b border-sidebar-border">
-        {userName ? (
-          <div className="flex items-center justify-between px-3 py-2 rounded-xl bg-muted">
-            <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-500 font-bold text-xs">
-                {userName.charAt(0).toUpperCase()}
+      {/* Auth */}
+      <div className="px-3 py-3 border-b border-white/8">
+        {user ? (
+          <div className="space-y-1">
+            <button
+              onClick={() => setShowProfile(!showProfile)}
+              className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl bg-white/5 hover:bg-white/8 transition-colors"
+            >
+              <div className="w-7 h-7 rounded-full bg-red-600/20 flex items-center justify-center text-red-500 font-bold text-xs border border-red-500/20 flex-shrink-0">
+                {user.username.charAt(0).toUpperCase()}
               </div>
-              <span className="text-sm font-medium text-foreground truncate max-w-[110px]">{userName}</span>
-            </div>
-            <button onClick={onLogout} className="p-1.5 rounded-lg hover:bg-border text-muted-foreground" title="Logout">
-              <LogOut size={14} />
+              <div className="flex-1 text-left min-w-0">
+                <p className="text-sm font-medium text-white truncate">{user.username}</p>
+                <p className="text-xs text-gray-600 truncate">{user.email}</p>
+              </div>
+              <button onClick={(e) => { e.stopPropagation(); onLogout(); }} className="p-1 rounded-lg hover:bg-white/10 text-gray-600" title="Logout">
+                <LogOut size={13} />
+              </button>
             </button>
+            {showProfile && (
+              <div className="px-3 py-2.5 rounded-xl bg-white/3 border border-white/8 space-y-1.5">
+                <div className="flex items-center gap-2">
+                  <User size={12} className="text-gray-600" />
+                  <span className="text-xs text-gray-500">Joined {new Date().toLocaleDateString("en-IN", { month: "short", year: "numeric" })}</span>
+                </div>
+                <p className="text-xs text-gray-700">{user.email}</p>
+              </div>
+            )}
           </div>
         ) : (
-          <>
+          <div className="space-y-1.5">
             <button
               onClick={() => setModal("login")}
-              className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl bg-blue-500 text-white text-sm font-semibold hover:bg-blue-600 transition-colors"
+              className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white text-sm font-semibold transition-colors"
             >
-              <LogIn size={15} /> Login
+              <LogIn size={14} /> Sign In
             </button>
             <button
               onClick={() => setModal("create")}
-              className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl border border-border text-foreground text-sm font-medium hover:bg-muted transition-colors"
+              className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl border border-white/10 text-gray-400 hover:text-white text-sm font-medium hover:bg-white/5 transition-colors"
             >
-              <UserPlus size={15} /> Create Account
+              <UserPlus size={14} /> Create Account
             </button>
-          </>
+          </div>
         )}
       </div>
 
-      {/* New Consultation */}
+      {/* New Chat */}
       <div className="px-3 py-3">
         <button
           onClick={() => { onCreateNew(); setIsOpen(false); }}
-          className="w-full flex items-center gap-2 px-3 py-2.5 rounded-xl border border-border text-foreground text-sm font-medium hover:bg-muted transition-colors"
+          className="w-full flex items-center gap-2 px-3 py-2.5 rounded-xl border border-white/8 text-gray-400 hover:text-white text-sm font-medium hover:bg-white/5 transition-colors"
         >
-          <Plus size={16} className="text-blue-500" /> New Consultation
+          <Plus size={15} className="text-red-500" /> New Chat
         </button>
       </div>
 
-      {/* History */}
+      {/* Search */}
+      <div className="px-3 pb-2">
+        <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-white/5 border border-white/8">
+          <Search size={13} className="text-gray-600 flex-shrink-0" />
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search chats..."
+            className="flex-1 bg-transparent text-sm text-white placeholder:text-gray-700 focus:outline-none"
+          />
+        </div>
+      </div>
+
+      {/* Chat List */}
       <div className="flex-1 overflow-y-auto px-3 pb-4">
-        {conversations.length > 0 && (
+        {pinnedConvs.length > 0 && (
           <>
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-1 mb-2">History</p>
-            <div className="space-y-0.5">
-              {conversations.map((conv) => (
-                <div
-                  key={conv.id}
-                  onClick={() => { onSelect(conv.id); setIsOpen(false); }}
-                  className={`group flex items-center gap-2 px-3 py-2.5 rounded-xl cursor-pointer transition-colors ${
-                    activeId === conv.id
-                      ? "bg-blue-500/10 text-blue-600 dark:text-blue-400"
-                      : "hover:bg-muted text-foreground"
-                  }`}
-                >
-                  <MessageSquare size={14} className="flex-shrink-0 opacity-60" />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">{conv.title}</p>
-                    <p className="text-xs text-muted-foreground">{formatDate(conv.created_at)}</p>
-                  </div>
-                  <button
-                    onClick={(e) => handleDelete(e, conv.id)}
-                    className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-border text-muted-foreground flex-shrink-0"
-                  >
-                    <Trash2 size={12} />
-                  </button>
-                </div>
-              ))}
+            <p className="text-xs font-semibold text-gray-700 uppercase tracking-wider px-1 mb-1.5 mt-1 flex items-center gap-1">
+              <Pin size={10} /> Pinned
+            </p>
+            <div className="space-y-0.5 mb-3">
+              {pinnedConvs.map((conv) => <ConvItem key={conv.id} conv={conv} />)}
             </div>
           </>
+        )}
+
+        {unpinnedConvs.length > 0 && (
+          <>
+            <p className="text-xs font-semibold text-gray-700 uppercase tracking-wider px-1 mb-1.5 mt-1">Recent</p>
+            <div className="space-y-0.5">
+              {unpinnedConvs.map((conv) => <ConvItem key={conv.id} conv={conv} />)}
+            </div>
+          </>
+        )}
+
+        {filtered.length === 0 && search && (
+          <p className="text-center text-xs text-gray-700 mt-8">No chats found</p>
         )}
       </div>
     </div>
@@ -160,16 +219,14 @@ export function Sidebar({
 
   return (
     <>
-      {/* Desktop sidebar */}
-      <div className="hidden md:flex flex-col w-72 bg-sidebar border-r border-sidebar-border h-full flex-shrink-0">
+      <div className="hidden md:flex flex-col w-72 border-r border-white/8 h-full flex-shrink-0">
         {sidebarContent}
       </div>
 
-      {/* Mobile sidebar overlay */}
       {isOpen && (
         <div className="md:hidden fixed inset-0 z-40 flex">
-          <div className="absolute inset-0 bg-black/40" onClick={() => setIsOpen(false)} />
-          <div className="relative w-72 bg-sidebar border-r border-sidebar-border h-full z-50">
+          <div className="absolute inset-0 bg-black/60" onClick={() => setIsOpen(false)} />
+          <div className="relative w-72 border-r border-white/8 h-full z-50">
             {sidebarContent}
           </div>
         </div>
@@ -179,7 +236,7 @@ export function Sidebar({
         <LoginModal
           mode={modal}
           onClose={() => setModal(null)}
-          onSuccess={(name) => { onLogin(name); setModal(null); }}
+          onSuccess={(u) => { onLogin(u); setModal(null); }}
         />
       )}
     </>

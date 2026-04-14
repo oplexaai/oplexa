@@ -3,8 +3,8 @@ import { ThemeProvider } from "next-themes";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Dr. Nisha – Medical AI Assistant",
-  description: "Your personal medical AI assistant. Ask health questions in English, Hindi, or Hinglish.",
+  title: "Oplexa – Your AI Assistant",
+  description: "Oplexa — A powerful AI assistant that can help you with anything. Chat in English, Hindi, or Hinglish.",
 };
 
 export default function RootLayout({
@@ -20,7 +20,7 @@ export default function RootLayout({
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
       </head>
       <body>
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+        <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
           {children}
         </ThemeProvider>
       </body>

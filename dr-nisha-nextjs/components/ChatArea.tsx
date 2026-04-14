@@ -126,7 +126,7 @@ export function ChatArea({ activeId, onCreateNew, isCreating, userName, onError 
           } catch {}
         }
       }
-    } catch (err: any) {
+    } catch {
       onError("Connection error. Please check your internet and try again.");
       setStreaming(false);
       setStreamingText("");
@@ -148,32 +148,30 @@ export function ChatArea({ activeId, onCreateNew, isCreating, userName, onError 
 
   return (
     <div className="flex flex-col flex-1 min-w-0 h-full">
-      {/* Messages area */}
       <div className="flex-1 overflow-y-auto pt-20 pb-4">
         {!activeId ? (
           <EmptyState
             onStartNew={async () => { await onCreateNew(); }}
             isCreating={isCreating}
+            userName={userName}
           />
         ) : isLoading ? (
-          <div className="flex flex-col items-center justify-center h-full mt-32 text-muted-foreground">
-            <Loader2 size={28} className="animate-spin mb-3 text-blue-500" />
-            <p className="text-sm">Loading consultation...</p>
+          <div className="flex flex-col items-center justify-center h-full mt-32 text-gray-600">
+            <Loader2 size={28} className="animate-spin mb-3 text-red-500" />
+            <p className="text-sm">Loading chat...</p>
           </div>
         ) : (
           <div className="max-w-3xl mx-auto py-4 space-y-1">
-
-            {/* "How can I help you today?" — shown when conversation is open but empty */}
             {messages.length === 0 && !streaming && (
               <div className="text-center mt-16 px-4">
-                <div className="w-20 h-20 mx-auto rounded-full overflow-hidden border-4 border-blue-500/20 shadow-lg mb-4">
-                  <img src="/dr-nisha.jpg" alt="Dr. Nisha" className="w-full h-full object-cover" />
+                <div className="w-16 h-16 mx-auto rounded-2xl overflow-hidden mb-4 shadow-lg">
+                  <img src="/oplexa-logo.png" alt="Oplexa" className="w-full h-full object-contain bg-black" />
                 </div>
-                <h3 className="text-2xl font-semibold mb-2 text-foreground">
-                  {userName ? `Hello, ${userName}!` : "How can I help you today?"}
+                <h3 className="text-2xl font-semibold mb-2 text-white">
+                  {userName ? `Hello, ${userName}!` : "How can I help you?"}
                 </h3>
-                <p className="text-muted-foreground text-sm max-w-xs mx-auto">
-                  Describe your symptoms or ask a medical question in English, Hindi, or Hinglish.
+                <p className="text-gray-600 text-sm max-w-xs mx-auto">
+                  Ask me anything — coding, writing, analysis, ideas, and more.
                 </p>
               </div>
             )}
@@ -182,7 +180,6 @@ export function ChatArea({ activeId, onCreateNew, isCreating, userName, onError 
               <MessageBubble key={msg.id} message={msg} userName={userName} />
             ))}
 
-            {/* Streaming response */}
             {streaming && streamingText && (
               <MessageBubble
                 message={{ id: -1, role: "assistant", content: streamingText }}
@@ -191,19 +188,18 @@ export function ChatArea({ activeId, onCreateNew, isCreating, userName, onError 
               />
             )}
 
-            {/* Typing indicator */}
             {streaming && !streamingText && (
               <div className="flex justify-start px-4 py-1">
                 <div className="flex items-end gap-2">
-                  <div className="w-7 h-7 rounded-full overflow-hidden border border-border flex-shrink-0">
-                    <img src="/dr-nisha.jpg" alt="Dr. Nisha" className="w-full h-full object-cover" />
+                  <div className="w-7 h-7 rounded-xl overflow-hidden border border-white/10 flex-shrink-0 bg-black">
+                    <img src="/oplexa-logo.png" alt="Oplexa" className="w-full h-full object-contain" />
                   </div>
-                  <div className="bg-muted rounded-2xl rounded-bl-sm px-4 py-3">
-                    <p className="text-xs font-medium text-blue-500 mb-1.5">Dr. Nisha is typing...</p>
+                  <div className="bg-white/5 border border-white/8 rounded-2xl rounded-bl-sm px-4 py-3">
+                    <p className="text-xs font-medium text-red-500 mb-1.5">Oplexa is thinking...</p>
                     <div className="flex gap-1 items-center h-4">
-                      <span className="w-1.5 h-1.5 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
-                      <span className="w-1.5 h-1.5 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
-                      <span className="w-1.5 h-1.5 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
+                      <span className="w-1.5 h-1.5 bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
+                      <span className="w-1.5 h-1.5 bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
+                      <span className="w-1.5 h-1.5 bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
                     </div>
                   </div>
                 </div>
@@ -215,31 +211,30 @@ export function ChatArea({ activeId, onCreateNew, isCreating, userName, onError 
         )}
       </div>
 
-      {/* Input bar — always shown */}
-      <div className="border-t border-border bg-background/80 backdrop-blur-md px-4 py-3">
+      <div className="border-t border-white/8 bg-black/50 backdrop-blur-md px-4 py-3">
         <div className="max-w-3xl mx-auto">
-          <div className="flex items-end gap-3 bg-muted rounded-2xl px-4 py-3 border border-border focus-within:border-blue-500/50 focus-within:ring-1 focus-within:ring-blue-500/20 transition-all">
+          <div className="flex items-end gap-3 bg-white/5 rounded-2xl px-4 py-3 border border-white/8 focus-within:border-red-500/40 focus-within:ring-1 focus-within:ring-red-500/10 transition-all">
             <textarea
               ref={textareaRef}
               value={input}
               onChange={handleTextareaChange}
               onKeyDown={handleKeyDown}
-              placeholder="Ask Dr. Nisha about your symptoms..."
+              placeholder="Ask Oplexa anything..."
               rows={1}
-              className="flex-1 bg-transparent resize-none text-foreground placeholder:text-muted-foreground text-sm focus:outline-none leading-relaxed"
+              className="flex-1 bg-transparent resize-none text-white placeholder:text-gray-600 text-sm focus:outline-none leading-relaxed"
               style={{ maxHeight: "120px" }}
               disabled={streaming}
             />
             <button
               onClick={handleSend}
               disabled={!input.trim() || streaming}
-              className="flex-shrink-0 w-9 h-9 rounded-xl bg-blue-500 hover:bg-blue-600 disabled:opacity-40 disabled:cursor-not-allowed text-white flex items-center justify-center transition-all"
+              className="flex-shrink-0 w-9 h-9 rounded-xl bg-red-600 hover:bg-red-700 disabled:opacity-30 disabled:cursor-not-allowed text-white flex items-center justify-center transition-all"
             >
               {streaming ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
             </button>
           </div>
-          <p className="text-center text-xs text-muted-foreground mt-2">
-            Dr. Nisha provides health information, not a substitute for medical advice.
+          <p className="text-center text-xs text-gray-700 mt-2">
+            Oplexa can make mistakes. Verify important information.
           </p>
         </div>
       </div>

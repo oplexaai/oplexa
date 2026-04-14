@@ -22,10 +22,10 @@ export function MessageBubble({ message, userName, isStreaming }: Props) {
     return (
       <div className="flex justify-end px-4 py-1">
         <div className="flex items-end gap-2 max-w-[80%]">
-          <div className="bg-blue-500 text-white rounded-2xl rounded-br-sm px-4 py-3 text-sm leading-relaxed shadow-sm">
+          <div className="bg-red-600 text-white rounded-2xl rounded-br-sm px-4 py-3 text-sm leading-relaxed shadow-sm">
             {message.content}
           </div>
-          <div className="w-7 h-7 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-500 font-bold text-xs flex-shrink-0 mb-0.5">
+          <div className="w-7 h-7 rounded-full bg-red-600/20 flex items-center justify-center text-red-500 font-bold text-xs flex-shrink-0 mb-0.5 border border-red-500/20">
             {userName ? userName.charAt(0).toUpperCase() : "U"}
           </div>
         </div>
@@ -36,19 +36,15 @@ export function MessageBubble({ message, userName, isStreaming }: Props) {
   return (
     <div className="flex justify-start px-4 py-1">
       <div className="flex items-end gap-2 max-w-[85%]">
-        <div className="w-7 h-7 rounded-full overflow-hidden flex-shrink-0 mb-0.5 border border-border shadow-sm">
-          <img
-            src="/dr-nisha.jpg"
-            alt="Dr. Nisha"
-            className="w-full h-full object-cover"
-          />
+        <div className="w-7 h-7 rounded-xl overflow-hidden flex-shrink-0 mb-0.5 border border-white/10 bg-black shadow-sm">
+          <img src="/oplexa-logo.png" alt="Oplexa" className="w-full h-full object-contain" />
         </div>
-        <div className="bg-muted text-foreground rounded-2xl rounded-bl-sm px-4 py-3 text-sm shadow-sm">
-          <div className="text-xs font-semibold text-blue-500 mb-1">Dr. Nisha</div>
+        <div className="bg-white/5 border border-white/8 text-white rounded-2xl rounded-bl-sm px-4 py-3 text-sm shadow-sm">
+          <div className="text-xs font-semibold text-red-500 mb-1">Oplexa</div>
           <div className="prose text-current">
             <ReactMarkdown>{message.content}</ReactMarkdown>
             {isStreaming && (
-              <span className="inline-block w-0.5 h-4 bg-blue-500 ml-0.5 align-middle animate-pulse" />
+              <span className="inline-block w-0.5 h-4 bg-red-500 ml-0.5 align-middle animate-pulse" />
             )}
           </div>
         </div>
