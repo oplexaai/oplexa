@@ -164,12 +164,19 @@ export default function ChatPage() {
 
     try {
       const conv = updatedWithUser.find(c => c.id === convId)!;
-      await streamChat(conv.messages, chunk => { full += chunk; setStreamText(full); }, ctrl.signal);
+      await streamChat(
+        conv.messages,
+        chunk => { full += chunk; setStreamText(full); },
+        ctrl.signal,
+        errMsg => { full = errMsg; setStreamText(errMsg); }
+      );
     } catch (err) {
-      if ((err as Error)?.name !== "AbortError") full = "Sorry, something went wrong. Please try again.";
+      if ((err as Error)?.name !== "AbortError") {
+        full = `Sorry, something went wrong: ${(err as Error)?.message || "Unknown error"}. Please try again.`;
+      }
     }
 
-    const aiMsg: ChatMessage = { role: "assistant", content: full || "..." };
+    const aiMsg: ChatMessage = { role: "assistant", content: full || "No response received. Please try again." };
     const finalConvs = updatedWithUser.map(c =>
       c.id === convId ? { ...c, messages: [...c.messages, aiMsg] } : c
     );
@@ -295,14 +302,17 @@ export default function ChatPage() {
       {sidebar}
 
       <div style={{ flex:1, display:"flex", flexDirection:"column", height:"100%", overflow:"hidden" }}>
-        <div style={{ padding:"14px 20px", borderBottom:"1px solid var(--border)", display:"flex", alignItems:"center", gap:"12px", background:"var(--surface)", minHeight:"56px" }}>
+        <div style={{ padding:"10px 16px", borderBottom:"2px solid var(--accent)", display:"flex", alignItems:"center", gap:"10px", background:"#1a0000", minHeight:"54px", flexShrink:0 }}>
           {isMobile && (
-            <button onClick={() => setSidebarOpen(!sidebarOpen)} style={{ width:"36px",height:"36px",color:"var(--text)",fontSize:"22px",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,background:"transparent",border:"none" }}>☰</button>
+            <button onClick={() => setSidebarOpen(!sidebarOpen)} style={{ width:"38px",height:"38px",color:"#ffffff",fontSize:"24px",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,background:"rgba(220,38,38,0.18)",borderRadius:"8px",border:"1px solid rgba(220,38,38,0.3)" }}>☰</button>
           )}
-          <span style={{ fontWeight:"600", fontSize:"15px", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", flex:1, color:"var(--text)" }}>
-            {activeConv ? activeConv.title : "Oplexa"}
-          </span>
-          <button onClick={() => setLocation("/profile")} style={{ width:"36px",height:"36px",background:"var(--accent)",borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"13px",fontWeight:"700",color:"white",flexShrink:0,overflow:"hidden",padding:0,border:"none" }}>
+          <div style={{ display:"flex",alignItems:"center",gap:"8px",flex:1,overflow:"hidden" }}>
+            <div style={{ width:"8px",height:"8px",borderRadius:"50%",background:"var(--accent)",flexShrink:0 }} />
+            <span style={{ fontWeight:"700", fontSize:"15px", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", color:"#ffffff", letterSpacing:"0.01em" }}>
+              {activeConv ? activeConv.title : "Oplexa"}
+            </span>
+          </div>
+          <button onClick={() => setLocation("/profile")} style={{ width:"36px",height:"36px",background:"var(--accent)",borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"13px",fontWeight:"700",color:"white",flexShrink:0,overflow:"hidden",padding:0,border:"2px solid rgba(255,255,255,0.2)" }}>
             {user?.avatarUrl
               ? <img src={user.avatarUrl} alt="avatar" style={{ width:"36px",height:"36px",objectFit:"cover" }} />
               : userInitials

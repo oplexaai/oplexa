@@ -8,7 +8,8 @@ export interface ChatMessage {
 export async function streamChat(
   messages: ChatMessage[],
   onChunk: (text: string) => void,
-  signal?: AbortSignal
+  signal?: AbortSignal,
+  onError?: (errMsg: string) => void
 ): Promise<void> {
   const token = getToken();
   const response = await fetch("/api/chat", {
@@ -23,7 +24,7 @@ export async function streamChat(
 
   if (!response.ok) {
     const err = await response.json().catch(() => ({}));
-    throw new Error((err as { message?: string }).message || "Chat request failed");
+    throw new Error((err as { message?: string }).message || `Server error ${response.status}`);
   }
 
   if (!response.body) throw new Error("No response stream");
@@ -42,6 +43,12 @@ export async function streamChat(
       if (data === "[DONE]") return;
       try {
         const parsed = JSON.parse(data);
+        if (parsed.error) {
+          const errMsg = `Error: ${parsed.error}`;
+          if (onError) onError(errMsg);
+          else onChunk(errMsg);
+          return;
+        }
         const text = parsed.content;
         if (text) onChunk(text);
       } catch {}
