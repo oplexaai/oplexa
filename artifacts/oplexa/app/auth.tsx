@@ -3,6 +3,7 @@ import { router } from "expo-router";
 import React, { useState } from "react";
 import {
   ActivityIndicator,
+  Image,
   Platform,
   Pressable,
   StyleSheet,
@@ -67,9 +68,11 @@ export default function AuthScreen() {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        <View style={[styles.logo, { backgroundColor: "#1A0000", borderColor: colors.primary + "40" }]}>
-          <Text style={[styles.logoText, { color: colors.primary }]}>O</Text>
-        </View>
+        <Image
+          source={require("../assets/images/oplexa-logo.jpg")}
+          style={styles.logo}
+          resizeMode="cover"
+        />
 
         <Text style={[styles.title, { color: colors.foreground }]}>
           {mode === "login" ? "Welcome back" : "Create account"}
@@ -185,14 +188,8 @@ const styles = StyleSheet.create({
     width: 72,
     height: 72,
     borderRadius: 18,
-    alignItems: "center",
-    justifyContent: "center",
     marginBottom: 24,
-    borderWidth: 1,
-  },
-  logoText: {
-    fontSize: 36,
-    fontFamily: "Inter_700Bold",
+    overflow: "hidden",
   },
   title: {
     fontSize: 28,

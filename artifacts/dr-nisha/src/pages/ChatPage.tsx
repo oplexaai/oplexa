@@ -34,9 +34,11 @@ function UserAvatar({ name }: { name: string }) {
 
 function OplexaAvatar() {
   return (
-    <div style={{ width:"32px",height:"32px",minWidth:"32px",background:"var(--surface2)",border:"1px solid var(--border)",borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"13px",fontWeight:"800",color:"var(--accent)" }}>
-      O
-    </div>
+    <img
+      src="/oplexa-logo.jpg"
+      alt="Oplexa"
+      style={{ width:"32px",height:"32px",minWidth:"32px",borderRadius:"50%",objectFit:"cover",border:"1px solid var(--border)" }}
+    />
   );
 }
 
@@ -149,7 +151,7 @@ export default function ChatPage() {
     }}>
       <div style={{ padding:"16px", borderBottom:"1px solid var(--border)" }}>
         <div style={{ display:"flex", alignItems:"center", gap:"10px", marginBottom:"12px" }}>
-          <div style={{ width:"32px",height:"32px",background:"var(--accent)",borderRadius:"8px",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"16px",fontWeight:"800",color:"white" }}>O</div>
+          <img src="/oplexa-logo.jpg" alt="Oplexa" style={{ width:"32px",height:"32px",borderRadius:"8px",objectFit:"cover" }} />
           <span style={{ fontSize:"18px", fontWeight:"700" }}>Oplexa</span>
         </div>
         <button onClick={startNewChat} style={{ width:"100%",padding:"10px 14px",background:"var(--accent-light)",border:"1px solid rgba(220,38,38,0.25)",borderRadius:"9px",color:"var(--accent)",fontSize:"14px",fontWeight:"600",display:"flex",alignItems:"center",gap:"8px" }}>
@@ -207,7 +209,7 @@ export default function ChatPage() {
         <div style={{ flex:1, overflowY:"auto", padding:"24px 20px", display:"flex", flexDirection:"column", gap:"20px" }}>
           {displayMessages.length === 0 && !streaming && (
             <div style={{ display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",height:"100%",gap:"12px",textAlign:"center" }}>
-              <div style={{ width:"72px",height:"72px",background:"var(--accent-light)",border:"1px solid rgba(220,38,38,0.2)",borderRadius:"20px",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"32px",fontWeight:"800",color:"var(--accent)" }}>O</div>
+              <img src="/oplexa-logo.jpg" alt="Oplexa" style={{ width:"80px",height:"80px",borderRadius:"24px",objectFit:"cover" }} />
               <h2 style={{ fontSize:"24px", fontWeight:"700" }}>How can I help you today?</h2>
               <p style={{ color:"var(--text-muted)", fontSize:"14px", maxWidth:"320px" }}>Ask me anything. I'm Oplexa, your AI assistant powered by advanced language models.</p>
             </div>

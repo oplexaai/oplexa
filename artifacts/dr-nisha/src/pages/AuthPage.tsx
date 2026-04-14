@@ -40,18 +40,18 @@ export default function AuthPage() {
     }}>
       <div style={{ width: "100%", maxWidth: "400px" }}>
         <div style={{ textAlign: "center", marginBottom: "32px" }}>
-          <div style={{
-            width: "64px", height: "64px",
-            background: "var(--accent)",
-            borderRadius: "16px",
-            display: "inline-flex",
-            alignItems: "center",
-            justifyContent: "center",
-            fontSize: "28px",
-            fontWeight: "800",
-            color: "white",
-            marginBottom: "16px",
-          }}>O</div>
+          <img
+            src="/oplexa-logo.jpg"
+            alt="Oplexa"
+            style={{
+              width: "72px", height: "72px",
+              borderRadius: "18px",
+              objectFit: "cover",
+              marginBottom: "16px",
+              display: "block",
+              margin: "0 auto 16px auto",
+            }}
+          />
           <h1 style={{ fontSize: "26px", fontWeight: "700", color: "var(--text)" }}>
             {tab === "login" ? "Welcome back" : "Create account"}
           </h1>

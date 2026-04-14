@@ -1,6 +1,6 @@
 import { Feather } from "@expo/vector-icons";
 import React from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { Image, StyleSheet, Text, View } from "react-native";
 import { useColors } from "@/hooks/useColors";
 
 const SUGGESTIONS = [
@@ -20,9 +20,11 @@ export function EmptyChat({ onSuggestion, userName }: Props) {
 
   return (
     <View style={styles.container}>
-      <View style={[styles.logo, { backgroundColor: "#1A0000", borderColor: colors.primary + "40" }]}>
-        <Text style={[styles.logoText, { color: colors.primary }]}>O</Text>
-      </View>
+      <Image
+        source={require("../assets/images/oplexa-logo.jpg")}
+        style={styles.logo}
+        resizeMode="cover"
+      />
       <Text style={[styles.greeting, { color: colors.foreground }]}>
         {userName ? `Hello, ${userName.split(" ")[0]}` : "Hello"}
       </Text>
@@ -61,14 +63,8 @@ const styles = StyleSheet.create({
     width: 72,
     height: 72,
     borderRadius: 18,
-    alignItems: "center",
-    justifyContent: "center",
     marginBottom: 20,
-    borderWidth: 1,
-  },
-  logoText: {
-    fontSize: 36,
-    fontFamily: "Inter_700Bold",
+    overflow: "hidden",
   },
   greeting: {
     fontSize: 28,
