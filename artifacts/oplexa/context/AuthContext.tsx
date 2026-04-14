@@ -1,8 +1,9 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import React, { createContext, useCallback, useContext, useEffect, useState } from "react";
+import { Platform } from "react-native";
 
 export interface User {
-  id: string;
+  id: number;
   name: string;
   email: string;
   phone?: string;
@@ -13,6 +14,7 @@ export interface User {
 
 interface AuthContextType {
   user: User | null;
+  token: string | null;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   register: (name: string, email: string, password: string) => Promise<{ success: boolean; error?: string }>;
@@ -23,70 +25,81 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
-const USERS_KEY = "oplexa_users";
-const CURRENT_USER_KEY = "oplexa_current_user";
+const TOKEN_KEY = "oplexa_jwt_token";
+const USER_KEY = "oplexa_user_cache";
 
-interface StoredUser {
-  id: string;
-  name: string;
-  email: string;
-  phone?: string;
-  bio?: string;
-  avatarUrl?: string;
-  passwordHash: string;
-  createdAt: number;
-}
-
-function simpleHash(str: string): string {
-  let hash = 0;
-  for (let i = 0; i < str.length; i++) {
-    const char = str.charCodeAt(i);
-    hash = (hash << 5) - hash + char;
-    hash = hash & hash;
+function getApiBase(): string {
+  const domain = process.env.EXPO_PUBLIC_DOMAIN || "";
+  if (Platform.OS === "web" && !domain) {
+    return "";
   }
-  return Math.abs(hash).toString(36);
+  if (!domain) return "";
+  return `https://${domain}/api-server`;
 }
 
-function toPublicUser(u: StoredUser): User {
-  return {
-    id: u.id,
-    name: u.name,
-    email: u.email,
-    phone: u.phone,
-    bio: u.bio,
-    avatarUrl: u.avatarUrl,
-    createdAt: u.createdAt,
+async function apiFetch(path: string, options: RequestInit = {}, token?: string | null): Promise<Response> {
+  const base = getApiBase();
+  const url = `${base}/api${path}`;
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    ...(options.headers as Record<string, string> || {}),
   };
+  return fetch(url, { ...options, headers });
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
+  const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    AsyncStorage.getItem(CURRENT_USER_KEY).then((data) => {
-      if (data) {
-        try {
-          setUser(JSON.parse(data));
-        } catch {}
+    (async () => {
+      try {
+        const storedToken = await AsyncStorage.getItem(TOKEN_KEY);
+        if (storedToken) {
+          const res = await apiFetch("/auth/me", {}, storedToken);
+          if (res.ok) {
+            const data = await res.json();
+            setToken(storedToken);
+            setUser(data.user);
+          } else {
+            await AsyncStorage.removeItem(TOKEN_KEY);
+            await AsyncStorage.removeItem(USER_KEY);
+          }
+        }
+      } catch {
+        const cached = await AsyncStorage.getItem(USER_KEY);
+        if (cached) {
+          try { setUser(JSON.parse(cached)); } catch {}
+        }
+      } finally {
+        setIsLoading(false);
       }
-      setIsLoading(false);
-    });
+    })();
   }, []);
 
-  const getUsers = async (): Promise<StoredUser[]> => {
-    const data = await AsyncStorage.getItem(USERS_KEY);
-    if (!data) return [];
-    try {
-      return JSON.parse(data);
-    } catch {
-      return [];
+  const login = useCallback(async (email: string, password: string) => {
+    if (!email.trim() || !password.trim()) {
+      return { success: false, error: "Email and password required" };
     }
-  };
+    try {
+      const res = await apiFetch("/auth/login", {
+        method: "POST",
+        body: JSON.stringify({ email, password }),
+      });
+      const data = await res.json();
+      if (!res.ok) return { success: false, error: data.error || "Login failed" };
 
-  const saveUsers = async (users: StoredUser[]) => {
-    await AsyncStorage.setItem(USERS_KEY, JSON.stringify(users));
-  };
+      await AsyncStorage.setItem(TOKEN_KEY, data.token);
+      await AsyncStorage.setItem(USER_KEY, JSON.stringify(data.user));
+      setToken(data.token);
+      setUser(data.user);
+      return { success: true };
+    } catch (err: any) {
+      return { success: false, error: "Network error — check connection" };
+    }
+  }, []);
 
   const register = useCallback(async (name: string, email: string, password: string) => {
     if (!name.trim() || !email.trim() || !password.trim()) {
@@ -95,99 +108,66 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (password.length < 6) {
       return { success: false, error: "Password must be at least 6 characters" };
     }
+    try {
+      const res = await apiFetch("/auth/register", {
+        method: "POST",
+        body: JSON.stringify({ name, email, password }),
+      });
+      const data = await res.json();
+      if (!res.ok) return { success: false, error: data.error || "Registration failed" };
 
-    const users = await getUsers();
-    if (users.find((u) => u.email.toLowerCase() === email.toLowerCase())) {
-      return { success: false, error: "Email already registered" };
+      await AsyncStorage.setItem(TOKEN_KEY, data.token);
+      await AsyncStorage.setItem(USER_KEY, JSON.stringify(data.user));
+      setToken(data.token);
+      setUser(data.user);
+      return { success: true };
+    } catch (err: any) {
+      return { success: false, error: "Network error — check connection" };
     }
-
-    const newUser: StoredUser = {
-      id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-      name: name.trim(),
-      email: email.toLowerCase().trim(),
-      passwordHash: simpleHash(password + email.toLowerCase()),
-      createdAt: Date.now(),
-    };
-
-    users.push(newUser);
-    await saveUsers(users);
-
-    const publicUser = toPublicUser(newUser);
-    await AsyncStorage.setItem(CURRENT_USER_KEY, JSON.stringify(publicUser));
-    setUser(publicUser);
-    return { success: true };
-  }, []);
-
-  const login = useCallback(async (email: string, password: string) => {
-    if (!email.trim() || !password.trim()) {
-      return { success: false, error: "Email and password required" };
-    }
-
-    const users = await getUsers();
-    const found = users.find(
-      (u) =>
-        u.email.toLowerCase() === email.toLowerCase().trim() &&
-        u.passwordHash === simpleHash(password + email.toLowerCase().trim())
-    );
-
-    if (!found) {
-      return { success: false, error: "Invalid email or password" };
-    }
-
-    const publicUser = toPublicUser(found);
-    await AsyncStorage.setItem(CURRENT_USER_KEY, JSON.stringify(publicUser));
-    setUser(publicUser);
-    return { success: true };
   }, []);
 
   const logout = useCallback(async () => {
-    await AsyncStorage.removeItem(CURRENT_USER_KEY);
+    await AsyncStorage.removeItem(TOKEN_KEY);
+    await AsyncStorage.removeItem(USER_KEY);
+    setToken(null);
     setUser(null);
   }, []);
 
   const updateProfile = useCallback(async (updates: Partial<Pick<User, "name" | "phone" | "bio" | "avatarUrl">>) => {
-    if (!user) return { success: false, error: "Not logged in" };
+    if (!token) return { success: false, error: "Not logged in" };
+    try {
+      const res = await apiFetch("/auth/profile", {
+        method: "PATCH",
+        body: JSON.stringify(updates),
+      }, token);
+      const data = await res.json();
+      if (!res.ok) return { success: false, error: data.error || "Update failed" };
 
-    const users = await getUsers();
-    const idx = users.findIndex((u) => u.id === user.id);
-    if (idx === -1) return { success: false, error: "User not found" };
-
-    if (updates.name !== undefined) {
-      if (!updates.name.trim()) return { success: false, error: "Name cannot be empty" };
-      users[idx].name = updates.name.trim();
+      await AsyncStorage.setItem(USER_KEY, JSON.stringify(data.user));
+      setUser(data.user);
+      return { success: true };
+    } catch {
+      return { success: false, error: "Network error" };
     }
-    if (updates.phone !== undefined) users[idx].phone = updates.phone;
-    if (updates.bio !== undefined) users[idx].bio = updates.bio;
-    if (updates.avatarUrl !== undefined) users[idx].avatarUrl = updates.avatarUrl;
-
-    await saveUsers(users);
-    const updated = toPublicUser(users[idx]);
-    await AsyncStorage.setItem(CURRENT_USER_KEY, JSON.stringify(updated));
-    setUser(updated);
-    return { success: true };
-  }, [user]);
+  }, [token]);
 
   const changePassword = useCallback(async (currentPassword: string, newPassword: string) => {
-    if (!user) return { success: false, error: "Not logged in" };
-    if (!currentPassword || !newPassword) return { success: false, error: "Both fields required" };
-    if (newPassword.length < 6) return { success: false, error: "New password must be at least 6 characters" };
-
-    const users = await getUsers();
-    const idx = users.findIndex((u) => u.id === user.id);
-    if (idx === -1) return { success: false, error: "User not found" };
-
-    const expectedHash = simpleHash(currentPassword + user.email.toLowerCase());
-    if (users[idx].passwordHash !== expectedHash) {
-      return { success: false, error: "Current password is incorrect" };
+    if (!token) return { success: false, error: "Not logged in" };
+    try {
+      const res = await apiFetch("/auth/change-password", {
+        method: "POST",
+        body: JSON.stringify({ currentPassword, newPassword }),
+      }, token);
+      const data = await res.json();
+      if (!res.ok) return { success: false, error: data.error || "Failed" };
+      return { success: true };
+    } catch {
+      return { success: false, error: "Network error" };
     }
-
-    users[idx].passwordHash = simpleHash(newPassword + user.email.toLowerCase());
-    await saveUsers(users);
-    return { success: true };
-  }, [user]);
+  }, [token]);
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, login, register, logout, updateProfile, changePassword }}>
+    <AuthContext.Provider value={{ user, token, isLoading, login, register, logout, updateProfile, changePassword }}>
       {children}
     </AuthContext.Provider>
   );

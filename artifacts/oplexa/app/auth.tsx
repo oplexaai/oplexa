@@ -19,8 +19,13 @@ import { useAuth } from "@/context/AuthContext";
 export default function AuthScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { login, register } = useAuth();
+  const { login, register, user } = useAuth();
   const [mode, setMode] = useState<"login" | "register">("login");
+
+  React.useEffect(() => {
+    if (user) router.replace("/");
+  }, [user]);
+
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");

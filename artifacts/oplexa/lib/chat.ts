@@ -1,4 +1,4 @@
-import { fetch } from "expo/fetch";
+import { Platform } from "react-native";
 
 export interface ChatMessage {
   role: "user" | "assistant" | "system";
@@ -11,7 +11,7 @@ export function generateMessageId(): string {
   return `msg-${Date.now()}-${messageCounter}-${Math.random().toString(36).substr(2, 9)}`;
 }
 
-function getApiBase(): string {
+export function getApiBase(): string {
   const domain = process.env.EXPO_PUBLIC_DOMAIN || "";
   if (!domain) return "";
   return `https://${domain}/api-server`;
@@ -21,27 +21,66 @@ export async function streamChat(
   messages: ChatMessage[],
   onChunk: (text: string) => void,
   onDone?: () => void,
-  onError?: (err: Error) => void
+  onError?: (err: Error) => void,
+  token?: string | null
 ): Promise<void> {
   const apiBase = getApiBase();
+  if (!apiBase) {
+    onError?.(new Error("API server not configured. Set EXPO_PUBLIC_DOMAIN."));
+    return;
+  }
 
   try {
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+      "Accept": "text/event-stream",
+    };
+    if (token) headers["Authorization"] = `Bearer ${token}`;
+
     const response = await fetch(`${apiBase}/api/chat`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "text/event-stream",
-      },
+      headers,
       body: JSON.stringify({ messages }),
-    });
+      ...(Platform.OS !== "web" ? { reactNative: { textStreaming: true } } : {}),
+    } as any);
 
     if (!response.ok) {
       const errText = await response.text().catch(() => "Unknown error");
       throw new Error(`API error ${response.status}: ${errText}`);
     }
 
+    if (Platform.OS === "web") {
+      const text = await response.text();
+      const lines = text.split("\n");
+      for (const line of lines) {
+        if (!line.startsWith("data: ")) continue;
+        const data = line.slice(6).trim();
+        if (data === "[DONE]") { onDone?.(); return; }
+        try {
+          const parsed = JSON.parse(data);
+          if (parsed.content) onChunk(parsed.content);
+        } catch {}
+      }
+      onDone?.();
+      return;
+    }
+
     const reader = response.body?.getReader();
-    if (!reader) throw new Error("No response body");
+    if (!reader) {
+      const text = await response.text?.() || "";
+      const lines = text.split("\n");
+      for (const line of lines) {
+        if (!line.startsWith("data: ")) continue;
+        const data = line.slice(6).trim();
+        if (data === "[DONE]") { onDone?.(); return; }
+        try {
+          const parsed = JSON.parse(data);
+          if (parsed.content) onChunk(parsed.content);
+        } catch {}
+      }
+      onDone?.();
+      return;
+    }
 
     const decoder = new TextDecoder();
     let buffer = "";
@@ -57,14 +96,10 @@ export async function streamChat(
       for (const line of lines) {
         if (!line.startsWith("data: ")) continue;
         const data = line.slice(6).trim();
-        if (data === "[DONE]") {
-          onDone?.();
-          return;
-        }
+        if (data === "[DONE]") { onDone?.(); return; }
         try {
           const parsed = JSON.parse(data);
-          const content = parsed.content;
-          if (content) onChunk(content);
+          if (parsed.content) onChunk(parsed.content);
         } catch {}
       }
     }

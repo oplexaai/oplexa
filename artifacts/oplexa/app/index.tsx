@@ -28,7 +28,7 @@ import { EmptyChat } from "@/components/EmptyChat";
 export default function ChatScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { user } = useAuth();
+  const { user, token } = useAuth();
   const { activeConversation, setActiveConversation, createConversation, updateConversation } = useChat();
 
   const [messages, setMessages] = useState<Message[]>([]);
@@ -124,7 +124,8 @@ export default function ChatScreen() {
             createdAt: Date.now(),
           };
           setMessages((prev) => [...prev, errMsg]);
-        }
+        },
+        token
       );
     } finally {
       setIsStreaming(false);
