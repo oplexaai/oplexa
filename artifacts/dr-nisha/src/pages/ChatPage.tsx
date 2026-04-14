@@ -306,11 +306,8 @@ export default function ChatPage() {
           {isMobile && (
             <button onClick={() => setSidebarOpen(!sidebarOpen)} style={{ width:"38px",height:"38px",color:"#ffffff",fontSize:"24px",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,background:"rgba(220,38,38,0.18)",borderRadius:"8px",border:"1px solid rgba(220,38,38,0.3)" }}>☰</button>
           )}
-          <div style={{ display:"flex",alignItems:"center",gap:"8px",flex:1,overflow:"hidden" }}>
-            <div style={{ width:"8px",height:"8px",borderRadius:"50%",background:"var(--accent)",flexShrink:0 }} />
-            <span style={{ fontWeight:"700", fontSize:"15px", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", color:"#ffffff", letterSpacing:"0.01em" }}>
-              {activeConv ? activeConv.title : "Oplexa"}
-            </span>
+          <div style={{ display:"flex",alignItems:"center",flex:1,overflow:"hidden" }}>
+            <img src="/oplexa-logo-text.png" alt="Oplexa" style={{ height:"28px", objectFit:"contain", maxWidth:"140px" }} />
           </div>
           <button onClick={() => setLocation("/profile")} style={{ width:"36px",height:"36px",background:"var(--accent)",borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"13px",fontWeight:"700",color:"white",flexShrink:0,overflow:"hidden",padding:0,border:"2px solid rgba(255,255,255,0.2)" }}>
             {user?.avatarUrl
