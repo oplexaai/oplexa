@@ -415,7 +415,7 @@ export default function ChatPage() {
         </div>
 
         <div style={{ padding:"14px 20px", background:"var(--surface)", borderTop:"1px solid var(--border)" }}>
-          <div style={{ display:"flex",gap:"10px",alignItems:"flex-end",background:"var(--surface2)",border:"1px solid var(--border)",borderRadius:"14px",padding:"10px 14px" }}>
+          <div style={{ display:"flex",gap:"10px",alignItems:"center",background:"var(--surface2)",border:"1px solid var(--border)",borderRadius:"14px",padding:"10px 14px" }}>
             <textarea
               ref={textareaRef}
               value={input}
