@@ -1,9 +1,40 @@
 import { Router } from "express";
 import { GoogleGenAI } from "@google/genai";
+import { db, aiConfig } from "@workspace/db";
 
 const router = Router();
 
-const SYSTEM_PROMPT = `You are Oplexa, a powerful and intelligent AI assistant. You can help with anything — coding, writing, analysis, math, creative tasks, business ideas, research, translation, general knowledge, and more. Be conversational, warm, and helpful. Auto-detect the user's language and reply in the same language. For coding: provide clean, working code. Format responses clearly using markdown when helpful. Get to the point — no unnecessary filler.`;
+const DEFAULT_SYSTEM_PROMPT = `You are Oplexa, a powerful and intelligent AI assistant. You can help with anything — coding, writing, analysis, math, creative tasks, business ideas, research, translation, general knowledge, and more. Be conversational, warm, and helpful. Auto-detect the user's language and reply in the same language. For coding: provide clean, working code. Format responses clearly using markdown when helpful. Get to the point — no unnecessary filler.`;
+
+let _cachedPrompt: string | null = null;
+let _cacheTime = 0;
+
+async function getSystemPrompt(): Promise<string> {
+  const now = Date.now();
+  if (_cachedPrompt !== null && now - _cacheTime < 30_000) return _cachedPrompt;
+  try {
+    const [config] = await db.select().from(aiConfig).limit(1);
+    if (config && (config.systemPrompt || config.personality || config.restrictions)) {
+      let prompt = `You are Oplexa, a powerful and intelligent AI assistant.`;
+      if (config.personality) prompt += `\n\n${config.personality}`;
+      if (config.systemPrompt) prompt += `\n\n${config.systemPrompt}`;
+      if (config.restrictions) prompt += `\n\nRestrictions:\n${config.restrictions}`;
+      prompt += `\n\nAuto-detect the user's language and reply in the same language. For coding: provide clean, working code. Format responses clearly using markdown when helpful. Get to the point — no unnecessary filler.`;
+      _cachedPrompt = prompt;
+    } else {
+      _cachedPrompt = DEFAULT_SYSTEM_PROMPT;
+    }
+    _cacheTime = now;
+  } catch {
+    _cachedPrompt = DEFAULT_SYSTEM_PROMPT;
+  }
+  return _cachedPrompt;
+}
+
+export function invalidatePromptCache() {
+  _cachedPrompt = null;
+  _cacheTime = 0;
+}
 
 router.post("/chat", async (req, res) => {
   const { messages } = req.body as { messages: Array<{ role: string; content: string }> };
@@ -25,11 +56,12 @@ router.post("/chat", async (req, res) => {
     const GROQ_KEY = process.env.GROQ_API_KEY;
     const GEMINI_KEY = process.env.AI_INTEGRATIONS_GEMINI_API_KEY;
     const GEMINI_BASE = process.env.AI_INTEGRATIONS_GEMINI_BASE_URL;
+    const systemPrompt = await getSystemPrompt();
 
     if (GROQ_KEY) {
-      await streamWithGroq(GROQ_KEY, messages, send);
+      await streamWithGroq(GROQ_KEY, messages, systemPrompt, send);
     } else if (GEMINI_KEY) {
-      await streamWithGemini(GEMINI_KEY, GEMINI_BASE, messages, send);
+      await streamWithGemini(GEMINI_KEY, GEMINI_BASE, messages, systemPrompt, send);
     } else {
       send(JSON.stringify({ error: "No AI API key configured. Add GROQ_API_KEY to secrets." }));
       res.end();
@@ -47,6 +79,7 @@ router.post("/chat", async (req, res) => {
 async function streamWithGroq(
   apiKey: string,
   messages: Array<{ role: string; content: string }>,
+  systemPrompt: string,
   send: (data: string) => void
 ) {
   const groqRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
@@ -57,7 +90,7 @@ async function streamWithGroq(
     },
     body: JSON.stringify({
       model: "llama-3.3-70b-versatile",
-      messages: [{ role: "system", content: SYSTEM_PROMPT }, ...messages],
+      messages: [{ role: "system", content: systemPrompt }, ...messages],
       stream: true,
       max_tokens: 4096,
       temperature: 0.7,
@@ -100,6 +133,7 @@ async function streamWithGemini(
   apiKey: string,
   baseUrl: string | undefined,
   messages: Array<{ role: string; content: string }>,
+  systemPrompt: string,
   send: (data: string) => void
 ) {
   const ai = new GoogleGenAI({ apiKey, ...(baseUrl ? { baseUrl } : {}) });
@@ -118,7 +152,7 @@ async function streamWithGemini(
       { role: "user", parts: [{ text: lastMessage?.content || "" }] },
     ],
     config: {
-      systemInstruction: SYSTEM_PROMPT,
+      systemInstruction: systemPrompt,
       maxOutputTokens: 4096,
     },
   });

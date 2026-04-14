@@ -29,6 +29,7 @@ function toPublic(u: typeof users.$inferSelect) {
     phone: u.phone ?? undefined,
     bio: u.bio ?? undefined,
     avatarUrl: u.avatarUrl ?? undefined,
+    isAdmin: u.isAdmin,
     createdAt: u.createdAt.getTime(),
   };
 }

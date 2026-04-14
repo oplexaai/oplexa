@@ -4,6 +4,7 @@ import geminiRouter from "./gemini";
 import chatRouter from "./chat";
 import authRouter from "./auth";
 import conversationsRouter from "./conversations";
+import adminRouter from "./admin";
 
 const router: IRouter = Router();
 
@@ -12,5 +13,6 @@ router.use("/gemini", geminiRouter);
 router.use(chatRouter);
 router.use(authRouter);
 router.use(conversationsRouter);
+router.use(adminRouter);
 
 export default router;

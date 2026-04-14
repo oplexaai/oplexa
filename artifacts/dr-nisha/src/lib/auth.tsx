@@ -10,6 +10,7 @@ export interface User {
   phone?: string;
   bio?: string;
   avatarUrl?: string;
+  isAdmin?: boolean;
   created_at?: string;
   createdAt?: number;
 }

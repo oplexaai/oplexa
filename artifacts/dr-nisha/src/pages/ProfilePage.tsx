@@ -194,6 +194,9 @@ export default function ProfilePage() {
           <SectionHeader title="ACCOUNT" />
           <div style={{ borderRadius:"16px",border:"1px solid var(--border)",overflow:"hidden",background:"var(--surface)" }}>
             <RowItem icon="🔒" label="Change Password" onClick={() => setShowPwModal(true)} />
+            {user?.isAdmin && (
+              <RowItem icon="⚙️" label="Admin Panel" value="Manage" valueColor="var(--accent)" onClick={() => setLocation("/admin")} />
+            )}
           </div>
 
           <SectionHeader title="APP" />

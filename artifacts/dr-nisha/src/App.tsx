@@ -4,6 +4,7 @@ import AuthPage from "./pages/AuthPage";
 import ChatPage from "./pages/ChatPage";
 import ProfilePage from "./pages/ProfilePage";
 import WelcomePage from "./pages/WelcomePage";
+import AdminPage from "./pages/AdminPage";
 
 function AppRoutes() {
   const { user, loading } = useAuth();
@@ -26,6 +27,9 @@ function AppRoutes() {
       </Route>
       <Route path="/profile">
         {!user ? <Redirect to="/welcome" /> : <ProfilePage />}
+      </Route>
+      <Route path="/admin">
+        {!user ? <Redirect to="/welcome" /> : !user.isAdmin ? <Redirect to="/" /> : <AdminPage />}
       </Route>
       <Route path="/">
         {!user ? <WelcomePage /> : <ChatPage />}
