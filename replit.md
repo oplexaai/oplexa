@@ -22,7 +22,8 @@ pnpm workspace monorepo using TypeScript. Each package manages its own dependenc
 - **Mobile App**: `artifacts/oplexa/` — Expo React Native app (iOS/Android)
 - **API Server**: `artifacts/api-server/` — Express API with Groq + Gemini AI streaming
 - **Theme**: Black (#000000) and Red (#DC2626)
-- **AI**: Groq (llama-3.3-70b-versatile) via `GROQ_API_KEY`, falls back to Gemini integration
+- **AI**: Groq (llama-3.3-70b-versatile) text + `llama-3.2-11b-vision-preview` for image input, via `GROQ_API_KEY`, falls back to Gemini integration
+- **Image Upload**: Web 📎 button (base64 FileReader) + Mobile expo-image-picker; images sent as Groq vision content array format
 - **Auth**: Local email/password auth with AsyncStorage
 - **Deploy target**: oplexa.in on AWS EC2
 

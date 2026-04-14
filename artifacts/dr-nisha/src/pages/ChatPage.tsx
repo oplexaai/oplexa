@@ -137,9 +137,11 @@ export default function ChatPage() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [searchQuery, setSearchQuery] = useState("");
+  const [pendingImage, setPendingImage] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<AbortController | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const imgInputRef = useRef<HTMLInputElement>(null);
   const dbSyncedRef = useRef(false);
 
   useEffect(() => {
@@ -182,23 +184,26 @@ export default function ChatPage() {
   }, [conversations]);
 
   async function sendMessage() {
-    if (!input.trim() || streaming) return;
+    if ((!input.trim() && !pendingImage) || streaming) return;
     const userText = input.trim();
+    const imageForMsg = pendingImage;
     setInput("");
+    setPendingImage(null);
     if (textareaRef.current) { textareaRef.current.style.height = "auto"; }
 
     let convId = activeId;
     let convs = conversations;
 
+    const titleText = userText || "Image";
     if (!convId) {
-      const conv: Conversation = { id: mkId(), title: userText.slice(0, 40), messages: [], createdAt: Date.now() };
+      const conv: Conversation = { id: mkId(), title: titleText.slice(0, 40), messages: [], createdAt: Date.now() };
       convs = [conv, ...conversations];
       convId = conv.id;
       setConversations(convs);
       setActiveId(convId);
     }
 
-    const userMsg: ChatMessage = { role: "user", content: userText };
+    const userMsg: ChatMessage = { role: "user", content: userText, ...(imageForMsg ? { imageUrl: imageForMsg } : {}) };
     const updatedWithUser = convs.map(c =>
       c.id === convId ? { ...c, messages: [...c.messages, userMsg], title: c.messages.length === 0 ? userText.slice(0, 40) : c.title } : c
     );
@@ -421,9 +426,16 @@ export default function ChatPage() {
                 border: msg.role==="assistant" ? "1px solid var(--border)" : "none",
               }}>
                 {msg.role === "user" ? (
-                  <span style={{ fontSize:"15px", lineHeight:"1.6", whiteSpace:"pre-wrap", wordBreak:"break-word" }}>
-                    {msg.content}
-                  </span>
+                  <div style={{ display:"flex", flexDirection:"column", gap:"8px" }}>
+                    {msg.imageUrl && (
+                      <img src={msg.imageUrl} alt="uploaded" style={{ maxWidth:"280px", maxHeight:"220px", borderRadius:"10px", objectFit:"contain", display:"block" }} />
+                    )}
+                    {msg.content && (
+                      <span style={{ fontSize:"15px", lineHeight:"1.6", whiteSpace:"pre-wrap", wordBreak:"break-word" }}>
+                        {msg.content}
+                      </span>
+                    )}
+                  </div>
                 ) : (
                   <div className="md-content">
                     <ReactMarkdown components={MD_COMPONENTS}>{msg.content}</ReactMarkdown>
@@ -454,7 +466,40 @@ export default function ChatPage() {
         </div>
 
         <div style={{ padding:"14px 20px", background:"var(--surface)", borderTop:"1px solid var(--border)" }}>
-          <div style={{ display:"flex",gap:"10px",alignItems:"center",background:"var(--surface2)",border:"1px solid var(--border)",borderRadius:"14px",padding:"10px 14px" }}>
+          {pendingImage && (
+            <div style={{ display:"flex",alignItems:"center",gap:"8px",marginBottom:"8px",padding:"6px 10px",background:"var(--surface2)",borderRadius:"10px",border:"1px solid var(--border)",width:"fit-content" }}>
+              <img src={pendingImage} alt="preview" style={{ width:"48px",height:"48px",borderRadius:"7px",objectFit:"cover" }} />
+              <button
+                onClick={() => setPendingImage(null)}
+                style={{ background:"rgba(220,38,38,0.12)",border:"1px solid rgba(220,38,38,0.3)",borderRadius:"6px",color:"#f87171",fontSize:"12px",padding:"2px 7px",cursor:"pointer" }}
+              >✕</button>
+            </div>
+          )}
+          <input
+            ref={imgInputRef}
+            type="file"
+            accept="image/*"
+            style={{ display:"none" }}
+            onChange={e => {
+              const file = e.target.files?.[0];
+              if (!file) return;
+              const reader = new FileReader();
+              reader.onload = ev => setPendingImage(ev.target?.result as string);
+              reader.readAsDataURL(file);
+              e.target.value = "";
+            }}
+          />
+          <div style={{ display:"flex",gap:"10px",alignItems:"center",background:"var(--surface2)",border:`1px solid ${pendingImage ? "var(--accent)" : "var(--border)"}`,borderRadius:"14px",padding:"10px 14px" }}>
+            <button
+              onClick={() => imgInputRef.current?.click()}
+              disabled={streaming}
+              title="Attach image"
+              style={{
+                width:"30px",height:"30px",minWidth:"30px",borderRadius:"8px",background:"transparent",
+                border:"1px solid var(--border)",color:"var(--text-muted)",fontSize:"16px",
+                display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",flexShrink:0,
+              }}
+            >📎</button>
             <textarea
               ref={textareaRef}
               value={input}
@@ -468,13 +513,13 @@ export default function ChatPage() {
             />
             <button
               onClick={streaming ? () => { abortRef.current?.abort(); setStreaming(false); setStreamText(""); } : sendMessage}
-              disabled={!streaming && !input.trim()}
+              disabled={!streaming && !input.trim() && !pendingImage}
               style={{
                 width:"36px",height:"36px",minWidth:"36px",borderRadius:"9px",
-                background: streaming ? "var(--surface2)" : (input.trim() ? "var(--accent)" : "var(--surface2)"),
-                border: `1px solid ${streaming || !input.trim() ? "var(--border)" : "transparent"}`,
+                background: streaming ? "var(--surface2)" : (input.trim() || pendingImage ? "var(--accent)" : "var(--surface2)"),
+                border: `1px solid ${streaming || (!input.trim() && !pendingImage) ? "var(--border)" : "transparent"}`,
                 display:"flex",alignItems:"center",justifyContent:"center",
-                color: input.trim() || streaming ? "white" : "var(--text-dim)",
+                color: input.trim() || pendingImage || streaming ? "white" : "var(--text-dim)",
                 fontSize:"18px",transition:"all 0.15s",
               }}
             >

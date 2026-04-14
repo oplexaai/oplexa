@@ -118,7 +118,16 @@ export const MessageBubble = memo(function MessageBubble({ message, userName, is
     return (
       <View style={[styles.row, styles.userRow]}>
         <View style={[styles.bubble, styles.userBubble, { backgroundColor: colors.userBubble }]}>
-          <Text style={[styles.userText, { color: "#FFFFFF" }]}>{message.content}</Text>
+          {message.imageUrl && (
+            <Image
+              source={{ uri: message.imageUrl }}
+              style={styles.msgImage}
+              resizeMode="contain"
+            />
+          )}
+          {message.content ? (
+            <Text style={[styles.userText, { color: "#FFFFFF" }]}>{message.content}</Text>
+          ) : null}
         </View>
         {user?.avatarUrl ? (
           <Image source={{ uri: user.avatarUrl }} style={styles.userAvatarImg} />
@@ -173,6 +182,12 @@ const styles = StyleSheet.create({
   aiBubble: {
     borderBottomLeftRadius: 4,
     borderWidth: 1,
+  },
+  msgImage: {
+    width: 220,
+    height: 180,
+    borderRadius: 10,
+    marginBottom: 4,
   },
   userText: {
     fontSize: 15,

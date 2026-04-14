@@ -3,6 +3,18 @@ import { Platform } from "react-native";
 export interface ChatMessage {
   role: "user" | "assistant" | "system";
   content: string;
+  imageUrl?: string;
+}
+
+type ContentPart = { type: "text"; text: string } | { type: "image_url"; image_url: { url: string } };
+
+function buildPayload(messages: ChatMessage[]) {
+  return messages.map(m => {
+    if (!m.imageUrl) return { role: m.role, content: m.content };
+    const parts: ContentPart[] = [{ type: "image_url", image_url: { url: m.imageUrl } }];
+    if (m.content) parts.push({ type: "text", text: m.content });
+    return { role: m.role, content: parts };
+  });
 }
 
 let messageCounter = 0;
@@ -49,7 +61,7 @@ export async function streamChat(
     const response = await fetch(chatUrl, {
       method: "POST",
       headers,
-      body: JSON.stringify({ messages }),
+      body: JSON.stringify({ messages: buildPayload(messages) }),
       ...(Platform.OS !== "web" ? { reactNative: { textStreaming: true } } : {}),
     } as any);
 

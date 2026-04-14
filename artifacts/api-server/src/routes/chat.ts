@@ -36,8 +36,31 @@ export function invalidatePromptCache() {
   _cacheTime = 0;
 }
 
+type ContentPart = { type: "text"; text: string } | { type: "image_url"; image_url: { url: string } };
+type ApiMessage = { role: string; content: string | ContentPart[] };
+
+function hasImage(messages: ApiMessage[]): boolean {
+  return messages.some(m => Array.isArray(m.content) && m.content.some(p => p.type === "image_url"));
+}
+
+function buildGroqMessages(messages: ApiMessage[], systemPrompt: string) {
+  const sys = { role: "system", content: systemPrompt };
+  const msgs = messages.map(m => {
+    if (!Array.isArray(m.content)) return m;
+    const parts = m.content as ContentPart[];
+    const textPart = parts.find(p => p.type === "text") as { type: "text"; text: string } | undefined;
+    const imgPart = parts.find(p => p.type === "image_url") as { type: "image_url"; image_url: { url: string } } | undefined;
+    const content: ContentPart[] = [];
+    if (imgPart) content.push(imgPart);
+    if (textPart && textPart.text) content.push(textPart);
+    else content.push({ type: "text", text: "What's in this image? Describe it in detail." });
+    return { role: m.role, content };
+  });
+  return [sys, ...msgs];
+}
+
 router.post("/chat", async (req, res) => {
-  const { messages } = req.body as { messages: Array<{ role: string; content: string }> };
+  const { messages } = req.body as { messages: ApiMessage[] };
 
   if (!messages || !Array.isArray(messages)) {
     res.status(400).json({ error: "messages array required" });
@@ -58,8 +81,9 @@ router.post("/chat", async (req, res) => {
     const GEMINI_BASE = process.env.AI_INTEGRATIONS_GEMINI_BASE_URL;
     const systemPrompt = await getSystemPrompt();
 
+    const withVision = hasImage(messages);
     if (GROQ_KEY) {
-      await streamWithGroq(GROQ_KEY, messages, systemPrompt, send);
+      await streamWithGroq(GROQ_KEY, messages, systemPrompt, send, withVision);
     } else if (GEMINI_KEY) {
       await streamWithGemini(GEMINI_KEY, GEMINI_BASE, messages, systemPrompt, send);
     } else {
@@ -78,10 +102,13 @@ router.post("/chat", async (req, res) => {
 
 async function streamWithGroq(
   apiKey: string,
-  messages: Array<{ role: string; content: string }>,
+  messages: ApiMessage[],
   systemPrompt: string,
-  send: (data: string) => void
+  send: (data: string) => void,
+  withVision = false
 ) {
+  const model = withVision ? "llama-3.2-11b-vision-preview" : "llama-3.3-70b-versatile";
+  const builtMessages = withVision ? buildGroqMessages(messages, systemPrompt) : [{ role: "system", content: systemPrompt }, ...messages];
   const groqRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
     method: "POST",
     headers: {
@@ -89,8 +116,8 @@ async function streamWithGroq(
       Authorization: `Bearer ${apiKey}`,
     },
     body: JSON.stringify({
-      model: "llama-3.3-70b-versatile",
-      messages: [{ role: "system", content: systemPrompt }, ...messages],
+      model,
+      messages: builtMessages,
       stream: true,
       max_tokens: 4096,
       temperature: 0.7,

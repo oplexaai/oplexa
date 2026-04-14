@@ -60,7 +60,7 @@ export default function ChatScreen() {
     setDrawerOpen(false);
   }, [setActiveConversation]);
 
-  const handleSend = useCallback(async (text: string) => {
+  const handleSend = useCallback(async (text: string, imageUrl?: string) => {
     if (isStreaming) return;
 
     const currentMessages = [...messages];
@@ -69,6 +69,7 @@ export default function ChatScreen() {
       role: "user",
       content: text,
       createdAt: Date.now(),
+      ...(imageUrl ? { imageUrl } : {}),
     };
 
     const newMessages = [...currentMessages, userMsg];
@@ -85,6 +86,7 @@ export default function ChatScreen() {
     const chatHistory: ChatMessage[] = newMessages.map((m) => ({
       role: m.role,
       content: m.content,
+      ...(m.imageUrl ? { imageUrl: m.imageUrl } : {}),
     }));
 
     let fullContent = "";

@@ -3,6 +3,20 @@ import { getToken } from "./auth";
 export interface ChatMessage {
   role: "user" | "assistant" | "system";
   content: string;
+  imageUrl?: string;
+}
+
+type ContentPart = { type: "text"; text: string } | { type: "image_url"; image_url: { url: string } };
+
+function buildMessagePayload(messages: ChatMessage[]) {
+  return messages.map(m => {
+    if (!m.imageUrl) return { role: m.role, content: m.content };
+    const parts: ContentPart[] = [
+      { type: "image_url", image_url: { url: m.imageUrl } },
+    ];
+    if (m.content) parts.push({ type: "text", text: m.content });
+    return { role: m.role, content: parts };
+  });
 }
 
 export async function streamChat(
@@ -18,7 +32,7 @@ export async function streamChat(
       "Content-Type": "application/json",
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
     },
-    body: JSON.stringify({ messages }),
+    body: JSON.stringify({ messages: buildMessagePayload(messages) }),
     signal,
   });
 

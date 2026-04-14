@@ -8,6 +8,7 @@ export interface Message {
   role: "user" | "assistant";
   content: string;
   createdAt: number;
+  imageUrl?: string;
 }
 
 export interface Conversation {
